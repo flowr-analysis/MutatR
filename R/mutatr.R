@@ -108,7 +108,8 @@ build_probs <- function(applicable) {
 
 #' Generate n mutations for the given abstract syntax tree.
 #'
-#' @param ast The abstract syntax tree to generate mutations for.
+#' @param asts The abstract syntax trees to generate mutations for. Must be a named
+#' lists with the name being the file path and the value being the abstract syntax tree.
 #' @param n The number of mutations to generate.
 #'
 #' @return A list of n mutated abstract syntax trees with the applied mutation

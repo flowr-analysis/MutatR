@@ -7,9 +7,10 @@
 generate_mutations(asts, n)
 }
 \arguments{
-\item{n}{The number of mutations to generate.}
+\item{asts}{The abstract syntax trees to generate mutations for. Must be a named
+lists with the name being the file path and the value being the abstract syntax tree.}
 
-\item{ast}{The abstract syntax tree to generate mutations for.}
+\item{n}{The number of mutations to generate.}
 }
 \value{
 A list of n mutated abstract syntax trees with the applied mutation
