@@ -108,6 +108,14 @@ build_probs <- function(applicable) {
   return(probs)
 }
 
+#' Generate n mutations for the given abstract syntax tree.
+#'
+#' @param ast The abstract syntax tree to generate mutations for.
+#' @param n The number of mutations to generate.
+#'
+#' @return A list of n mutated abstract syntax trees with the applied mutation
+#'
+#' @export
 generate_mutations <- function(ast, n) {
   applicable <- list()
   applicable_by_category <- find_applicable_mutations(ast)
