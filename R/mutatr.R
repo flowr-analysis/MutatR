@@ -17,11 +17,11 @@ find_applicable_mutations <- function(ast) {
       call <- as.call(c(f, as))
       for (m in all_applicable(call, r)) muts[[m]] <<- c(muts[[m]], rlang::hash(call))
       visit(f, v, Roles$FunName)
-      switch(name_as_string(f),
-        "while" = arg_role <<- Roles$Cond,
-        "if" = arg_role <<- Roles$Cond,
-        "return" = arg_role <<- Roles$Ret,
-        arg_role <<- Roles$Arg
+      arg_role <- switch(name_as_string(f),
+        "while" = Roles$Cond,
+        "if" = Roles$Cond,
+        "return" = Roles$Ret,
+        Roles$Arg
       )
       lapply(as, function(a) visit(a, v, arg_role))
     },
