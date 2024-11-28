@@ -1,0 +1,79 @@
+on: push
+
+permissions: read-all
+
+jobs:
+  check:
+    runs-on: ${{ matrix.config.os }}
+    name: R CMD check on ${{ matrix.config.os }} (${{ matrix.config.r }})
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          # - { os: macos-latest, r: "release" }
+          - { os: windows-latest, r: "release" }
+          - { os: ubuntu-latest, r: "release" }
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+    steps:
+      - name: Setup repo and R
+        uses: flowr-analysis/mutatr/.github/actions/setup@main
+        with:
+          r-version: ${{ matrix.config.r }}
+          extra-packages: |
+            any::rcmdcheck
+      - name: R CMD check
+        uses: r-lib/actions/check-r-package@v2
+        with:
+          args: 'c("--no-manual", "--as-cran", "--no-examples", "--no-tests")'
+
+  build:
+    runs-on: ${{ matrix.config.os }}
+    name: Build on ${{ matrix.config.os }} (${{ matrix.config.r }})
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          # - { os: macos-latest, r: "release" }
+          - { os: windows-latest, r: "release" }
+          - { os: ubuntu-latest, r: "release" }
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+    steps:
+      - name: Setup repo and R
+        uses: flowr-analysis/mutatr/.github/actions/setup@main
+        with:
+          r-version: ${{ matrix.config.r }}
+          extra-packages: |
+            any::devtools
+      - name: Build
+        id: build
+        run: |
+          path <- devtools::build()
+          cat("pkg-build-path=", path, "\n", file = Sys.getenv("GITHUB_OUTPUT"), sep = "", append = TRUE)
+        shell: Rscript {0}
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ format('{0}-{1}-r{2}-pkg', runner.os, runner.arch, matrix.config.r) }}
+          path: ${{ steps.build.outputs.pkg-build-path }}
+
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint package
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Setup repo and R
+        uses: flowr-analysis/mutatr/.github/actions/setup@main
+        with:
+          extra-packages: |
+            any::lintr
+            local::.
+      - name: Lint
+        run: lintr::lint_package()
+        shell: Rscript {0}
+        env:
+          LINTR_ERROR_ON_LINT: true

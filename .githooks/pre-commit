@@ -1,0 +1,6 @@
+#!/bin/sh
+if ! git diff --cached --exit-code --quiet DESCRIPTION; then
+  echo "DESCRIPTION is staged an will be reformatted ..."
+  Rscript -e "usethis::use_tidy_description()"
+fi
+Rscript -e "roxygen2::roxygenize()"
