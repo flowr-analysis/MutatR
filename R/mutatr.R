@@ -146,5 +146,5 @@ test <- function() {
     "/home/luke/src/master-thesis/package/R/utils.R" # nolint
   )
   asts <- lapply(files, parse, keep.source = TRUE) |> setNames(files)
-  generate_mutations(asts, 1000)
+  invisible(generate_mutations(asts, 1000))
 }
