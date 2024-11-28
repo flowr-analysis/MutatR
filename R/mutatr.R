@@ -5,7 +5,7 @@ find_applicable_mutations <- function(ast) {
   }
   visitor <- list(
     exprlist = function(es, r, v) {
-      lapply(es, function(e) visit(e, v, Roles$ExprList))
+      lapply(es, function(e) visit(e, v, roles$ExprList))
     },
     atomic = function(a, r, v) {
       for (m in all_applicable(a, r)) muts[[m]] <<- c(muts[[m]], rlang::hash(a))
@@ -16,21 +16,21 @@ find_applicable_mutations <- function(ast) {
     call = function(f, as, r, v) {
       call <- as.call(c(f, as))
       for (m in all_applicable(call, r)) muts[[m]] <<- c(muts[[m]], rlang::hash(call))
-      visit(f, v, Roles$FunName)
+      visit(f, v, roles$FunName)
       arg_role <- switch(name_as_string(f),
-        "while" = Roles$Cond,
-        "if" = Roles$Cond,
-        "return" = Roles$Ret,
-        Roles$Arg
+        "while" = roles$Cond,
+        "if" = roles$Cond,
+        "return" = roles$Ret,
+        roles$Arg
       )
       lapply(as, function(a) visit(a, v, arg_role))
     },
     pairlist = function(l, r, v) {
-      lapply(l, function(l) visit(l, v, Roles$PairList))
+      lapply(l, function(l) visit(l, v, roles$PairList))
     }
   )
 
-  visit(ast, visitor, Roles$Root)
+  visit(ast, visitor, roles$Root)
   return(muts)
 }
 

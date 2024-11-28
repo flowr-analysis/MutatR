@@ -1,4 +1,4 @@
-Roles <- list(
+roles <- list(
   Arg = "Argument",
   FunName = "Function Name",
   Cond = "Condition",
