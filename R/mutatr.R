@@ -47,7 +47,7 @@ apply_list <- function(l, v) {
 }
 
 apply_mutation <- function(ast, mutation, srcref) {
-  cat("Applying'", mutation, "' at", srcref, "\n")
+  cat("Applying", mutation, "at", srcref, "\n")
   visitor <- list(
     exprlist = function(es, r, v) {
       new_list <- apply_list(es, v)
