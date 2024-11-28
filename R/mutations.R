@@ -90,7 +90,7 @@ arithmetic <- list(
 
 function_name <- list(
   is_applicable = function(ast, role) {
-    return(is.name(ast) && role == Roles$FunName && name_as_string(ast) %in% c("lapply", "sapply", "vapply"))
+    return(is.name(ast) && role == roles$FunName && name_as_string(ast) %in% c("lapply", "sapply", "vapply"))
   },
   mutate = function(ast) {
     return(as.name(sample(c("lapply", "sapply", "vapply"), 1)))
@@ -99,7 +99,7 @@ function_name <- list(
 
 branch_condition <- list(
   is_applicable = function(ast, role) {
-    return(role == Roles$Cond)
+    return(role == roles$Cond)
   },
   mutate = function(ast) {
     return(sample(c(quote(TRUE), quote(FALSE)), 1))
@@ -126,7 +126,7 @@ is_assignment <- function(name) {
 
 void_call <- list(
   is_applicable = function(ast, role) {
-    return(is.call(ast) && role == Roles$ExprList && !is_assignment(name_as_string(ast[[1]])))
+    return(is.call(ast) && role == roles$ExprList && !is_assignment(name_as_string(ast[[1]])))
   },
   mutate = function(ast) {
     return(NULL)
