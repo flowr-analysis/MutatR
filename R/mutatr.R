@@ -5,7 +5,7 @@ find_applicable_mutations <- function(ast) {
   }
   visitor <- list(
     exprlist = function(es, r, v) {
-      lapply(es, function(e) visit(e, v, roles$ExprList))
+      lapply(es, visit, v, roles$ExprList)
     },
     atomic = function(a, r, v) {
       for (m in all_applicable(a, r)) muts[[m]] <<- c(muts[[m]], rlang::hash(a))
@@ -23,10 +23,10 @@ find_applicable_mutations <- function(ast) {
         "return" = roles$Ret,
         roles$Arg
       )
-      lapply(as, function(a) visit(a, v, arg_role))
+      lapply(as, visit, v, arg_role)
     },
     pairlist = function(l, r, v) {
-      lapply(l, function(l) visit(l, v, roles$PairList))
+      lapply(l, visit, v, roles$PairList)
     }
   )
 
@@ -35,7 +35,7 @@ find_applicable_mutations <- function(ast) {
 }
 
 apply_list <- function(l, v) {
-  new_l <- lapply(l, function(e) visit(e, v))
+  new_l <- lapply(l, visit, v)
   new_l <- Filter(function(e) !is.null(e), new_l)
   return(new_l)
 }
@@ -135,6 +135,6 @@ generate_mutations <- function(ast, n) {
 }
 
 test <- function() {
-  ast <- parse("/home/luke/src/cran-packages-coverage/mutatR/inst/example.R", keep.source = TRUE)
-  new_ast <- generate_mutations(ast, 1000)
+  ast <- parse("/home/luke/src/cran-packages-coverage/mutatR/inst/example.R", keep.source = TRUE) # nolint.
+  generate_mutations(ast, 1000)
 }
