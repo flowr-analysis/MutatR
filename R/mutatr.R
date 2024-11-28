@@ -4,18 +4,26 @@ find_applicable_mutations <- function(ast) {
     muts[[key]] <- c()
   }
   visitor <- list(
-    exprlist = function(es, r, v) {
-      lapply(es, visit, v, roles$ExprList)
-    },
+    exprlist = function(es, r, v) lapply(es, visit, v, roles$ExprList),
     atomic = function(a, r, v) {
-      for (m in all_applicable(a, r)) muts[[m]] <<- c(muts[[m]], rlang::hash(a))
+      for (m in all_applicable(a, r)) {
+        new_mut <- rlang::hash(a)
+        muts[[m]] <<- append(muts[[m]], list(new_mut))
+      }
     },
     name = function(n, r, v) {
-      for (m in all_applicable(n, r)) muts[[m]] <<- c(muts[[m]], rlang::hash(n))
+      for (m in all_applicable(n, r)) {
+        new_mut <- rlang::hash(n)
+        muts[[m]] <<- append(muts[[m]], list(new_mut))
+      }
     },
     call = function(f, as, r, v) {
       call <- as.call(c(f, as))
-      for (m in all_applicable(call, r)) muts[[m]] <<- c(muts[[m]], rlang::hash(call))
+      for (m in all_applicable(call, r)) {
+        new_mut <- rlang::hash(call)
+        muts[[m]] <<- append(muts[[m]], list(new_mut))
+      }
+
       visit(f, v, roles$FunName)
       arg_role <- switch(name_as_string(f),
         "while" = roles$Cond,
@@ -25,9 +33,7 @@ find_applicable_mutations <- function(ast) {
       )
       lapply(as, visit, v, arg_role)
     },
-    pairlist = function(l, r, v) {
-      lapply(l, visit, v, roles$PairList)
-    }
+    pairlist = function(l, r, v) lapply(l, visit, v, roles$PairList)
   )
 
   visit(ast, visitor, roles$Root)
@@ -40,7 +46,8 @@ apply_list <- function(l, v) {
   return(new_l)
 }
 
-apply_mutation <- function(ast, kind, srcref) {
+apply_mutation <- function(ast, mutation, srcref) {
+  cat("Applying'", mutation, "' at", srcref, "\n")
   visitor <- list(
     exprlist = function(es, r, v) {
       new_list <- apply_list(es, v)
@@ -48,20 +55,20 @@ apply_mutation <- function(ast, kind, srcref) {
     },
     atomic = function(a, r, v) {
       if (rlang::hash(a) == srcref) {
-        return(mutations[[kind]]$mutate(a))
+        return(mutations[[mutation]]$mutate(a))
       }
       return(a)
     },
     name = function(n, r, v) {
       if (rlang::hash(n) == srcref) {
-        return(mutations[[kind]]$mutate(n))
+        return(mutations[[mutation]]$mutate(n))
       }
       return(n)
     },
     call = function(f, as, r, v) {
       call <- as.call(c(f, as))
       if (rlang::hash(call) == srcref) {
-        return(mutations[[kind]]$mutate(call))
+        return(mutations[[mutation]]$mutate(call))
       }
 
       new_name <- visit(f, v, r)
@@ -76,15 +83,6 @@ apply_mutation <- function(ast, kind, srcref) {
   )
 
   return(visit(ast, visitor))
-}
-
-merge_lists_by_names <- function(ls) {
-  names <- unique(unlist(lapply(ls, names)))
-  merged <- list()
-  for (name in names) {
-    merged[[name]] <- unlist(lapply(ls, function(l) l[[name]]))
-  }
-  return(merged)
 }
 
 name_as_string <- function(name) {
@@ -104,7 +102,7 @@ build_probs <- function(applicable) {
     "swap sign" = 0.5,
     "void call" = 0.5
   )
-  probs <- lapply(applicable, function(mutation) probs_by_category[[mutation$cat]])
+  probs <- lapply(applicable, function(mutation) probs_by_category[[mutation$mutation]])
   return(probs)
 }
 
@@ -116,12 +114,14 @@ build_probs <- function(applicable) {
 #' @return A list of n mutated abstract syntax trees with the applied mutation
 #'
 #' @export
-generate_mutations <- function(ast, n) {
+generate_mutations <- function(asts, n) {
   applicable <- list()
-  applicable_by_category <- find_applicable_mutations(ast)
-  for (category in names(applicable_by_category)) {
-    for (mut in applicable_by_category[[category]]) {
-      applicable <- append(applicable, list(list(cat = category, mut = mut)))
+  for (file in names(asts)) {
+    applicable_per_file <- find_applicable_mutations(asts[[file]])
+    for (mutation in names(applicable_per_file)) {
+      for (srcref in applicable_per_file[[mutation]]) {
+        applicable <- append(applicable, list(list(mutation = mutation, srcref = srcref, file = file)))
+      }
     }
   }
 
@@ -130,19 +130,19 @@ generate_mutations <- function(ast, n) {
     n <- length(applicable)
   }
 
-  asts <- list()
-  selected <- sample(applicable, n, prob = build_probs(applicable))
-  for (mutation in selected) {
-    category <- mutation$cat
-    mut <- mutation$mut
-    cat("Applying", mut, "mutation in", category, "category.\n")
-    ast <- apply_mutation(ast, category, mut)
-    asts <- append(asts, list(list(ast = ast, mutation = category, srcref = mut)))
+  mutants <- list()
+  for (mutation in sample(applicable, n, prob = build_probs(applicable))) {
+    mutant <- apply_mutation(asts[[mutation$file]], mutation$mutation, mutation$srcref)
+    mutants <- append(mutants, list(c(mutation, list(mutant = mutant))))
   }
-  return(asts)
+  return(mutants)
 }
 
 test <- function() {
-  ast <- parse("/home/luke/src/cran-packages-coverage/mutatR/inst/example.R", keep.source = TRUE) # nolint.
-  generate_mutations(ast, 1000)
+  files <- c(
+    "/home/luke/src/master-thesis/package/R/flowr_utils.R", # nolint
+    "/home/luke/src/master-thesis/package/R/utils.R" # nolint
+  )
+  asts <- lapply(files, parse, keep.source = TRUE) |> setNames(files)
+  generate_mutations(asts, 1000)
 }
