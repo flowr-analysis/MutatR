@@ -4,12 +4,12 @@
 \alias{generate_mutations}
 \title{Generate n mutations for the given abstract syntax tree.}
 \usage{
-generate_mutations(ast, n)
+generate_mutations(asts, n)
 }
 \arguments{
-\item{ast}{The abstract syntax tree to generate mutations for.}
-
 \item{n}{The number of mutations to generate.}
+
+\item{ast}{The abstract syntax tree to generate mutations for.}
 }
 \value{
 A list of n mutated abstract syntax trees with the applied mutation
