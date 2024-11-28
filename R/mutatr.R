@@ -135,8 +135,6 @@ generate_mutations <- function(ast, n) {
 }
 
 test <- function() {
-  # ast <- parse("/home/luke/src/cran-packages-coverage/mutatR/inst/example.R", keep.source = TRUE)
-  ast <- parse("/home/luke/src/master-thesis/package/R/flowr_utils.R", keep.source = TRUE)
+  ast <- parse("/home/luke/src/cran-packages-coverage/mutatR/inst/example.R", keep.source = TRUE)
   new_ast <- generate_mutations(ast, 1000)
-  # cat(deparse(new_ast, control = "all"), "\n")
 }
