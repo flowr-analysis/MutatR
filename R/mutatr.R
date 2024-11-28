@@ -41,9 +41,18 @@ find_applicable_mutations <- function(ast) {
 }
 
 apply_list <- function(l, v) {
-  new_l <- lapply(l, visit, v)
+  finished <- FALSE
+  new_l <- lapply(l, function(e) {
+    if (finished) {
+      return(e)
+    }
+
+    new_e <- visit(e, v)
+    finished <<- new_e$finished
+    return(new_e$ast)
+  })
   new_l <- Filter(function(e) !is.null(e), new_l)
-  return(new_l)
+  return(list(finished = finished, ast = new_l))
 }
 
 apply_mutation <- function(ast, mutation, srcref) {
@@ -51,38 +60,46 @@ apply_mutation <- function(ast, mutation, srcref) {
   visitor <- list(
     exprlist = function(es, r, v) {
       new_list <- apply_list(es, v)
-      return(as.expression(new_list))
+      return(list(finished = new_list$finished, ast = as.expression(new_list$ast)))
     },
     atomic = function(a, r, v) {
       if (rlang::hash(a) == srcref) {
-        return(mutations[[mutation]]$mutate(a))
+        return(list(finished = TRUE, ast = mutations[[mutation]]$mutate(a)))
       }
-      return(a)
+      return(list(finished = FALSE, ast = a))
     },
     name = function(n, r, v) {
       if (rlang::hash(n) == srcref) {
-        return(mutations[[mutation]]$mutate(n))
+        return(list(finished = TRUE, ast = mutations[[mutation]]$mutate(n)))
       }
-      return(n)
+      return(list(finished = FALSE, ast = n))
     },
     call = function(f, as, r, v) {
       call <- as.call(c(f, as))
       if (rlang::hash(call) == srcref) {
-        return(mutations[[mutation]]$mutate(call))
+        return(list(finished = TRUE, ast = mutations[[mutation]]$mutate(call)))
       }
 
       new_name <- visit(f, v, r)
+      if (new_name$finished) {
+        return(list(finished = TRUE, ast = as.call(c(new_name$ast, as))))
+      }
+
       new_args <- apply_list(as, v)
-      new_call <- as.call(c(new_name, new_args))
-      return(new_call)
+      new_call <- as.call(c(new_name$ast, new_args$ast))
+      return(list(finished = new_args$finished, ast = new_call))
     },
     pairlist = function(l, r, v) {
       new_list <- apply_list(l, v)
-      return(as.pairlist(new_list))
+      return(list(finished = new_list$finished, ast = as.pairlist(new_list$ast)))
     }
   )
 
-  return(visit(ast, visitor))
+  result <- visit(ast, visitor)
+  if (!result$finished) {
+    warning("Mutation not found")
+  }
+  return(result$ast)
 }
 
 name_as_string <- function(name) {
@@ -112,16 +129,20 @@ build_probs <- function(applicable) {
 #' @param asts The abstract syntax trees to generate mutations for. Must be a named
 #' lists with the name being the file path and the value being the abstract syntax tree.
 #' @param n The number of mutations to generate.
+#' @param filter A function that takes the mutation name, the source reference and the
+#' file path and returns a boolean indicating whether the mutation can be applied.
 #'
 #' @return A list of n mutated abstract syntax trees with the applied mutation
 #'
 #' @export
-generate_mutations <- function(asts, n) {
+generate_mutations <- function(asts, n, filter = function(...) TRUE) {
   applicable <- list()
   for (file in names(asts)) {
     applicable_per_file <- find_applicable_mutations(asts[[file]])
     for (mutation in names(applicable_per_file)) {
       for (srcref in applicable_per_file[[mutation]]) {
+        p <- filter(mutation, srcref, file)
+        if (isFALSE(p)) next
         applicable <- append(applicable, list(list(mutation = mutation, srcref = srcref, file = file)))
       }
     }
