@@ -137,7 +137,7 @@ generate_mutations <- function(ast, n) {
     mut <- mutation$mut
     cat("Applying", mut, "mutation in", category, "category.\n")
     ast <- apply_mutation(ast, category, mut)
-    asts <- append(asts, list(list(ast = ast, category = category, mut = mut)))
+    asts <- append(asts, list(list(ast = ast, mutation = category, srcref = mut)))
   }
   return(asts)
 }
