@@ -133,6 +133,18 @@ void_call <- list(
   }
 )
 
+return_value <- list(
+  is_applicable = function(ast, role) {
+    return(role == roles$Ret)
+  },
+  mutate = function(ast) {
+    if (identical(ast, quote(NULL))) {
+      return(quote(numeric(length = 0)))
+    }
+    return(quote(NULL))
+  }
+)
+
 # https://pitest.org/quickstart/mutators/
 mutations <- list(
   "arithmetic" = arithmetic,
@@ -144,7 +156,8 @@ mutations <- list(
   "negative condition" = negative_condition,
   "swap boolean" = bool_swap,
   "swap sign" = sign_swap,
-  "void call" = void_call
+  "void call" = void_call,
+  "return value" = return_value
 )
 
 any_applicable <- function(ast, role) {

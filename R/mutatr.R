@@ -100,7 +100,8 @@ build_probs <- function(applicable) {
     "negative condition" = 0.5,
     "swap boolean" = 0.5,
     "swap sign" = 0.5,
-    "void call" = 0.5
+    "void call" = 0.5,
+    "return value" = 0.5
   )
   probs <- lapply(applicable, function(mutation) probs_by_category[[mutation$mutation]])
   return(probs)
