@@ -8,21 +8,24 @@ roles <- list(
   Root = "Root"
 )
 
-visit <- function(ast, visitor, role) {
+visit <- function(ast, visitor, down) {
+  if ("pre" %in% names(visitor)) {
+    visitor$pre(ast, visitor, down)
+  }
   if (is.expression(ast)) {
-    return(visitor$exprlist(ast, role, visitor))
+    return(visitor$exprlist(ast, visitor, down))
   } else if (is.atomic(ast)) {
-    return(visitor$atomic(ast, role, visitor))
+    return(visitor$atomic(ast, visitor, down))
   } else if (is.name(ast)) {
-    return(visitor$name(ast, role, visitor))
+    return(visitor$name(ast, visitor, down))
   } else if (is.call(ast)) {
     name <- ast[[1]]
     if (name == "function") { # strip the srcref at the last place
-      return(visitor$call(name, as.list(ast[2:(length(ast) - 1)]), role, visitor))
+      return(visitor$call(name, as.list(ast[2:(length(ast) - 1)]), visitor, down))
     }
-    return(visitor$call(name, as.list(ast[-1]), role, visitor))
+    return(visitor$call(name, as.list(ast[-1]), visitor, down))
   } else if (is.pairlist(ast)) {
-    return(visitor$pairlist(as.list(ast), role, visitor))
+    return(visitor$pairlist(as.list(ast), visitor, down))
   } else {
     stop("Don't know how to handle type ", typeof(ast), call. = FALSE)
   }
