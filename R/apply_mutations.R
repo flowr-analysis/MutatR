@@ -14,7 +14,7 @@ apply_on_list <- function(l, v) {
 }
 
 apply_mutation <- function(ast, mutation, srcref) {
-  mut <- mutations[[mutation]]$mutate
+  mut <- mutations[[mutation]]$mutation
   cat("Applying", mutation, "at", srcref, "\n")
   visitor <- list(
     exprlist = function(es, v, ...) {
