@@ -4,7 +4,12 @@
 \alias{generate_mutations}
 \title{Generate n mutations for the given abstract syntax tree.}
 \usage{
-generate_mutations(asts, n, filter = function(...) TRUE)
+generate_mutations(
+  asts,
+  n,
+  filter = function(...) TRUE,
+  probabilities = list()
+)
 }
 \arguments{
 \item{asts}{The abstract syntax trees to generate mutations for. Must be a named
@@ -14,6 +19,9 @@ lists with the name being the file path and the value being the abstract syntax 
 
 \item{filter}{A function that takes the mutation name, the source reference and the
 file path and returns a boolean indicating whether the mutation can be applied.}
+
+\item{probabilities}{A named list of probabilities for each mutation. If a mutation
+is not in the list, the default probability is used.}
 }
 \value{
 A list of n mutated abstract syntax trees with the applied mutation

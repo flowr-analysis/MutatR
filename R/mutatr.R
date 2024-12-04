@@ -2,8 +2,10 @@ name_as_string <- function(name) {
   return(paste(name, collapse = ""))
 }
 
-build_probs <- function(applicable) {
-  probs <- lapply(applicable, function(mutation) mutations[[mutation$mutation]]$prob)
+build_probs <- function(applicable, overwrite) {
+  probs <- lapply(applicable, function(mutation) {
+    overwrite[[mutation$mutation]] %||% mutations[[mutation$mutation]]$prob
+  })
   return(probs)
 }
 
@@ -14,11 +16,13 @@ build_probs <- function(applicable) {
 #' @param n The number of mutations to generate.
 #' @param filter A function that takes the mutation name, the source reference and the
 #' file path and returns a boolean indicating whether the mutation can be applied.
+#' @param probabilities A named list of probabilities for each mutation. If a mutation
+#' is not in the list, the default probability is used.
 #'
 #' @return A list of n mutated abstract syntax trees with the applied mutation
 #'
 #' @export
-generate_mutations <- function(asts, n, filter = function(...) TRUE) {
+generate_mutations <- function(asts, n, filter = function(...) TRUE, probabilities = list()) {
   applicable <- list()
   for (file in names(asts)) {
     applicable_per_file <- find_applicable_mutations(asts[[file]])
@@ -37,7 +41,7 @@ generate_mutations <- function(asts, n, filter = function(...) TRUE) {
   }
 
   mutants <- list()
-  for (mutation in sample(applicable, n, prob = build_probs(applicable))) {
+  for (mutation in sample(applicable, n, prob = build_probs(applicable, probabilities))) {
     mutant <- apply_mutation(asts[[mutation$file]], mutation$mutation, mutation$srcref)
     mutants <- append(mutants, list(c(mutation, list(mutant = mutant))))
   }
