@@ -63,5 +63,6 @@ test <- function() {
     "/home/luke/src/master-thesis/package/R/utils.R" # nolint
   )
   asts <- lapply(files, parse, keep.source = TRUE) |> setNames(files)
+  asts <- lapply(asts, add_srcrefs)
   invisible(generate_mutations(asts, 1000))
 }
