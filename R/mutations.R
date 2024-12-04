@@ -147,17 +147,17 @@ return_value <- list(
 
 # https://pitest.org/quickstart/mutators/
 mutations <- list(
-  "arithmetic" = arithmetic,
-  "branch condition" = branch_condition,
-  "condition boundary" = condition_boundary,
-  "function name" = function_name,
-  "increment" = increment,
-  "logic" = logic,
-  "negative condition" = negative_condition,
-  "swap boolean" = bool_swap,
-  "swap sign" = sign_swap,
-  "void call" = void_call,
-  "return value" = return_value
+  "arithmetic" = list(prob = 0.5, mutation = arithmetic),
+  "branch condition" = list(prob = 0.5, mutation = branch_condition),
+  "condition boundary" = list(prob = 0.5, mutation = condition_boundary),
+  "function name" = list(prob = 0.5, mutation = function_name),
+  "increment" = list(prob = 0.5, mutation = increment),
+  "logic" = list(prob = 0.5, mutation = logic),
+  "negative condition" = list(prob = 0.5, mutation = negative_condition),
+  "swap boolean" = list(prob = 0.5, mutation = bool_swap),
+  "swap sign" = list(prob = 0.5, mutation = sign_swap),
+  "void call" = list(prob = 0.5, mutation = void_call),
+  "return value" = list(prob = 0.5, mutation = return_value)
 )
 
 any_applicable <- function(ast, role) {
@@ -167,7 +167,7 @@ any_applicable <- function(ast, role) {
 all_applicable <- function(ast, role) {
   muts <- c()
   for (key in names(mutations)) {
-    mut <- mutations[[key]]
+    mut <- mutations[[key]]$mutation
     if (mut$is_applicable(ast, role)) {
       muts <- c(muts, key)
     }

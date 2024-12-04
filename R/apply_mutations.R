@@ -14,6 +14,7 @@ apply_on_list <- function(l, v) {
 }
 
 apply_mutation <- function(ast, mutation, srcref) {
+  mut <- mutations[[mutation]]$mutate
   cat("Applying", mutation, "at", srcref, "\n")
   visitor <- list(
     exprlist = function(es, v, ...) {
@@ -26,20 +27,20 @@ apply_mutation <- function(ast, mutation, srcref) {
     },
     atomic = function(a, ...) {
       if (rlang::hash(a) == srcref) {
-        return(list(finished = TRUE, ast = mutations[[mutation]]$mutate(a)))
+        return(list(finished = TRUE, ast = mut$mutate(a)))
       }
       return(list(finished = FALSE, ast = a))
     },
     name = function(n, ...) {
       if (rlang::hash(n) == srcref) {
-        return(list(finished = TRUE, ast = mutations[[mutation]]$mutate(n)))
+        return(list(finished = TRUE, ast = mut$mutate(n)))
       }
       return(list(finished = FALSE, ast = n))
     },
     call = function(f, as, v, ...) {
       call <- as.call(c(f, as))
       if (rlang::hash(call) == srcref) {
-        return(list(finished = TRUE, ast = mutations[[mutation]]$mutate(call)))
+        return(list(finished = TRUE, ast = mut$mutate(call)))
       }
 
       new_name <- visit(f, v)

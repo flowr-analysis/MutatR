@@ -3,20 +3,7 @@ name_as_string <- function(name) {
 }
 
 build_probs <- function(applicable) {
-  probs_by_category <- list(
-    "arithmetic" = 0.5,
-    "branch condition" = 0.5,
-    "condition boundary" = 0.5,
-    "function name" = 0.5,
-    "increment" = 0.5,
-    "logic" = 0.5,
-    "negative condition" = 0.5,
-    "swap boolean" = 0.5,
-    "swap sign" = 0.5,
-    "void call" = 0.5,
-    "return value" = 0.5
-  )
-  probs <- lapply(applicable, function(mutation) probs_by_category[[mutation$mutation]])
+  probs <- lapply(applicable, function(mutation) mutations[[mutation$mutation]]$prob)
   return(probs)
 }
 
