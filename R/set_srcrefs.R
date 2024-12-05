@@ -1,140 +1,113 @@
-find_pd_id <- function(srcref) {
-  pd <- getParseData(srcref)
-  pd_expr <- (
-    (pd$line1 == srcref[[1]] & pd$line2 == srcref[[3]]) |
-      (pd$line1 == srcref[[7]] & pd$line2 == srcref[[8]])
-  ) &
-    pd$col1 == srcref[[2]] &
-    pd$col2 == srcref[[4]] &
-    pd$token == "expr"
-  parent_idcs <- which(pd_expr)
-  if (length(parent_idcs) == 0) {
-    cat("No id found for", srcref, "\n")
+make_srcref <- function(pd, srcfile) {
+  if (is.null(pd)) {
     return(NULL)
   }
-  if (length(parent_idcs) > 1) parent_idcs <- parent_idcs[[1]]
-
-  ids <- pd$id[parent_idcs]
-  return(ids)
-}
-
-find_children <- function(pd, parent_id) {
-  pd_children <- pd[pd$parent == parent_id, ]
-  pd_children <- pd_children[order(pd_children$line1, pd_children$col1), ]
-
-  pd_children <- pd_children[pd_children$token != "COMMENT", ]
-  return(pd_children)
-}
-
-make_srcref <- function(i, srcfile, pd) {
   srcref(srcfile, c(
-    pd$line1[i],
-    pd$col1[i],
-    pd$line2[i],
-    pd$col2[i],
-    pd$col1[i],
-    pd$col2[i],
-    pd$line1[i],
-    pd$line2[i]
+    pd$line1,
+    pd$col1,
+    pd$line2,
+    pd$col2,
+    pd$col1,
+    pd$col2,
+    pd$line1,
+    pd$line2
   ))
 }
 
-set_srcref <- function(elem, ref) {
-  if(is.null(elem)) {
-    print("huh")
-  }
-  if (!is.name(elem)) {
+set_srcref <- function(elem, pd, srcfile) {
+  ref <- make_srcref(pd, srcfile)
+  if (!is.null(elem) && !is.name(elem) && !is.null(ref)) {
     attr(elem, "srcref") <- ref
   }
   return(elem)
 }
 
-cal <- function(f, as, v, down) {
-  srcfile <- down$srcfile
-  child_pd <- find_children(down$pd, down$id)
-  args_srcrefs <- switch(name_as_string(f),
+make_pd_hirarchy <- function(pd, root = pd[pd$parent == 0, ]$id) {
+  comment_marker <- "COMMENT"
+  hirarchy <- lapply(root, function(id) {
+    elem <- pd[pd$id == id, ]
+    if (elem$token == "COMMENT") {
+      return(comment_marker)
+    }
+    children <- pd[pd$parent == id, ]
+    children_h <- Filter(function(elem) {
+      return(length(elem) != 0)
+    }, lapply(seq_len(nrow(children)), function(i) {
+      child <- children[i, ]
+      make_pd_hirarchy(pd, child$id)
+    }))
+    list(elem = elem, children = children_h)
+  })
+  return(Filter(function(elem) elem != comment_marker, hirarchy))
+}
+
+ops <- c(
+  "~", "+", "-", "*", "/", "^", "**", "%%", "%/%", "%*%", "%o%", "%x%", "==", "!=", ">", ">=", "<", "<=", "&",
+  "&&", "|", "||", "!", "%in%", "<-", ":=", "<<-", "->", "->>", "=", ":", "?"
+)
+
+cal <- function(f, as, v, pd, srcfile) {
+  arg_pds <- switch(name_as_string(f),
     "if" = {
-      cond <- make_srcref(3, srcfile, child_pd)
-      then <- make_srcref(5, srcfile, child_pd)
-      els <- make_srcref(7, srcfile, child_pd)
+      cond <- pd$children[[3]][[1]]
+      then <- pd$children[[5]][[1]]
+      els <- if (length(pd$children) >= 7) pd$children[[7]][[1]] else NULL
       list(cond, then, els)[seq_along(as)]
     },
     "while" = {
-      cond <- make_srcref(3, srcfile, child_pd)
-      body <- make_srcref(5, srcfile, child_pd)
+      cond <- pd$children[[3]][[1]]
+      body <- pd$children[[5]][[1]]
       list(cond, body)
     },
     "for" = {
-      cond <- make_srcref(2, srcfile, child_pd)
-      body <- make_srcref(3, srcfile, child_pd)
-      list(cond, body)
+      cond <- pd$children[[2]][[1]]
+      var <- cond$children[[2]][[1]]
+      sequ <- cond$children[[4]][[1]]
+      body <- pd$children[[3]][[1]]
+      list(var, sequ, body)
     },
     "function" = {
-      body <- make_srcref(nrow(child_pd), srcfile, child_pd)
+      body <- pd$children[[length(pd$children)]]
       list(NULL, body)
     },
-    "+" = ,
-    "-" = ,
-    "*" = ,
-    "/" = ,
-    "+" = ,
-    "+" = ,
-    "^" = ,
-    "%in%" = ,
-    "<-" = ,
-    "->" = {
-      lhs <- make_srcref(1, srcfile, child_pd)
-      rhs <- make_srcref(3, srcfile, child_pd)
-      list(lhs, rhs)
+    "{" = {
+      children <- if (is.null(names(pd))) pd[[1]]$children else pd$children
+      lapply(seq(from = 2, length.out = length(as)), function(i) children[[i]][[1]])
     },
-    "{" = lapply(seq(from = 2, length.out = length(as)), make_srcref, srcfile, child_pd),
-    "$" = return(as.call(c(f, as))),
     {
-      if(length(child_pd$text) < 2) {
-        print("huh")
+      if (name_as_string(f) %in% ops && length(as) == 2) {
+        list(pd$children[[1]][[1]], pd$children[[3]][[1]])
+      } else if (name_as_string(f) %in% ops && length(as) == 1) {
+        list(pd$children[[2]][[1]])
+      } else {
+        cat(sprintf("unknown function %s\n", name_as_string(f)))
+        rep(list(NULL), length(as))
       }
-      from <- if (child_pd$text[[2]] == "(") 3 else 2
-      lapply(seq(from = from, by = 2, length.out = length(as)), make_srcref, srcfile, child_pd)
     }
   )
   as <- lapply(seq_along(as), function(i) {
     arg <- as[[i]]
-    arg_srcref <- args_srcrefs[[i]]
-    arg_pd <- getParseData(arg_srcref)
-    arg_id <- find_pd_id(arg_srcref)
-
-    arg <- set_srcref(arg, arg_srcref)
-    a <- visit(arg, v, modifyList(down, list(id = arg_id, pd = arg_pd, elem = arg)))
-    return(a)
+    arg_pd <- arg_pds[[i]]
+    visit(arg, v, arg_pd, srcfile)
   })
-  return(as.call(c(f, as)))
+  return(as.call(c(f, as)) |> set_srcref(pd$elem, srcfile))
 }
 
 add_srcrefs <- function(ast) {
+  pd <- getParseData(ast) |> make_pd_hirarchy()
   visitor <- list(
-    exprlist = function(es, v, ...) {
+    exprlist = function(es, v, pd, ...) {
       srcfile <- attr(es, "srcfile")
-      srcrefs <- getSrcref(es)
-      es <- lapply(seq_along(es), function(i) {
-        expr <- es[[i]]
-        expr_srcref <- srcrefs[[i]]
-        expr_pd <- getParseData(expr_srcref)
-        expr_id <- find_pd_id(expr_srcref)
-
-        expr <- set_srcref(expr, expr_srcref)
-        expr <- visit(expr, visitor, list(id = expr_id, pd = expr_pd, elem = expr, srcfile = srcfile))
-        return(expr)
-      })
-      return(as.expression(es))
+      lapply(seq_along(es), function(i) {
+        e <- es[[i]]
+        pd <- pd[[i]]
+        visit(e, v, pd, srcfile)
+      }) |> as.expression()
     },
-    pairlist = function(l, v, ...) {
-      # TODO: visit children
-      # as.pairlist(lapply(l, visit, v))
-      return(as.pairlist(l))
-    },
-    atomic = function(a, ...) a,
-    name = function(n, ...) n,
+    pairlist = function(l, v, pd, srcfile) set_srcref(l, pd$elem, srcfile),
+    atomic = function(a, v, pd, srcfile) set_srcref(a, pd$elem, srcfile),
+    name = function(n, v, pd, srcfile) set_srcref(n, pd$elem, srcfile),
     call = cal
   )
-  visit(ast, visitor)
+  visit(ast, visitor, pd, NULL)
 }
