@@ -8,19 +8,19 @@ find_applicable_mutations <- function(ast) {
     pairlist = function(l, v, ...) lapply(l, visit, v, roles$PairList),
     atomic = function(a, v, r) {
       for (m in all_applicable(a, r)) {
-        new_mut <- rlang::hash(a)
+        new_mut <- get_srcref(a)
         muts[[m]] <<- append(muts[[m]], list(new_mut))
       }
     },
     name = function(n, v, r) {
       for (m in all_applicable(n, r)) {
-        new_mut <- rlang::hash(n)
+        new_mut <- get_srcref(n)
         muts[[m]] <<- append(muts[[m]], list(new_mut))
       }
     },
     call = function(cl, v, r) {
       for (m in all_applicable(cl, r)) {
-        new_mut <- rlang::hash(cl)
+        new_mut <- get_srcref(cl)
         muts[[m]] <<- append(muts[[m]], list(new_mut))
       }
 

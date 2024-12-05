@@ -9,6 +9,18 @@ build_probs <- function(applicable, overwrite) {
   return(probs)
 }
 
+get_srcref <- function(ast) {
+  srcref <- getSrcref(ast)
+  if (is.null(srcref)) {
+    stop("uff")
+  }
+  return(srcref)
+}
+
+compare_srcrefs <- function(srcref1, srcref2) {
+  all.equal(srcref1, srcref2)
+}
+
 #' Generate n mutations for the given abstract syntax tree.
 #'
 #' @param asts The abstract syntax trees to generate mutations for. Must be a named

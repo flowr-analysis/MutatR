@@ -29,13 +29,13 @@ apply_mutation <- function(ast, mutation, srcref) {
       return(list(finished = new_list$finished, ast = as.pairlist(new_list$ast)))
     },
     atomic = function(a, ...) {
-      if (rlang::hash(a) == srcref) {
+      if (compare_srcrefs(a, srcref)) {
         return(list(finished = TRUE, ast = mut$mutate(a)))
       }
       return(list(finished = FALSE, ast = a))
     },
     name = function(n, ...) {
-      if (rlang::hash(n) == srcref) {
+      if (compare_srcrefs(n, srcref)) {
         return(list(finished = TRUE, ast = mut$mutate(n)))
       }
       return(list(finished = FALSE, ast = n))
@@ -45,7 +45,7 @@ apply_mutation <- function(ast, mutation, srcref) {
       f <- parts$name
       as <- parts$args
 
-      if (rlang::hash(cl) == srcref) {
+      if (compare_srcrefs(cl, srcref)) {
         return(list(finished = TRUE, ast = mut$mutate(cl)))
       }
 
