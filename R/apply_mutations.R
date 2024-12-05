@@ -6,6 +6,9 @@ apply_on_list <- function(l, v) {
     }
 
     new_e <- visit(e, v)
+    if (rlang::is_missing(new_e)) {
+      return(rlang::missing_arg())
+    }
     finished <<- new_e$finished
     return(new_e$ast)
   })
