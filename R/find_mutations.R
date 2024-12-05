@@ -18,12 +18,15 @@ find_applicable_mutations <- function(ast) {
         muts[[m]] <<- append(muts[[m]], list(new_mut))
       }
     },
-    call = function(f, as, v, r) {
-      call <- as.call(c(f, as))
-      for (m in all_applicable(call, r)) {
-        new_mut <- rlang::hash(call)
+    call = function(cl, v, r) {
+      for (m in all_applicable(cl, r)) {
+        new_mut <- rlang::hash(cl)
         muts[[m]] <<- append(muts[[m]], list(new_mut))
       }
+
+      parts <- split_up_call(cl)
+      f <- parts$name
+      as <- parts$args
 
       visit(f, v, roles$FunName)
       arg_role <- switch(name_as_string(f),

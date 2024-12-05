@@ -40,10 +40,13 @@ apply_mutation <- function(ast, mutation, srcref) {
       }
       return(list(finished = FALSE, ast = n))
     },
-    call = function(f, as, v, ...) {
-      call <- as.call(c(f, as))
-      if (rlang::hash(call) == srcref) {
-        return(list(finished = TRUE, ast = mut$mutate(call)))
+    call = function(cl, v, ...) {
+      parts <- split_up_call(cl)
+      f <- parts$name
+      as <- parts$args
+
+      if (rlang::hash(cl) == srcref) {
+        return(list(finished = TRUE, ast = mut$mutate(cl)))
       }
 
       new_name <- visit(f, v)

@@ -46,7 +46,11 @@ ops <- c(
   "&&", "|", "||", "!", "%in%", "<-", ":=", "<<-", "->", "->>", "=", ":", "?"
 )
 
-cal <- function(f, as, v, pd, srcfile) {
+cal <- function(cl, v, pd, srcfile) {
+  parts <- split_up_call(cl)
+  f <- parts$name
+  as <- parts$args
+
   arg_pds <- switch(name_as_string(f),
     "if" = {
       cond <- pd$children[[3]][[1]]

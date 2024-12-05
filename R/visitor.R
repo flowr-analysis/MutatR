@@ -8,6 +8,16 @@ roles <- list(
   Root = "Root"
 )
 
+split_up_call <- function(ast) {
+  name <- ast[[1]]
+  if (name == "function") {
+    args <- ast[[2]]
+    body <- ast[[3]]
+    return(list(name = name, args = list(args, body)))
+  }
+  return(list(name = name, args = as.list(ast[-1])))
+}
+
 visit <- function(ast, visitor, ...) {
   if ("pre" %in% names(visitor)) {
     visitor$pre(ast, visitor, ...)
@@ -21,13 +31,7 @@ visit <- function(ast, visitor, ...) {
   } else if (is.name(ast)) {
     return(visitor$name(ast, visitor, ...))
   } else if (is.call(ast)) {
-    name <- ast[[1]]
-    if (name == "function") {
-      args <- ast[[2]]
-      body <- ast[[3]]
-      return(visitor$call(name, list(args, body), visitor, ...))
-    }
-    return(visitor$call(name, as.list(ast[-1]), visitor, ...))
+    return(visitor$call(ast, visitor, ...))
   } else if (is.pairlist(ast)) {
     return(visitor$pairlist(ast, visitor, ...))
   } else {
