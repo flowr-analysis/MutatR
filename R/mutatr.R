@@ -4,21 +4,23 @@ name_as_string <- function(name) {
 
 build_probs <- function(applicable, overwrite) {
   probs <- lapply(applicable, function(mutation) {
-    overwrite[[mutation$mutation]] %||% mutations[[mutation$mutation]]$prob
+    overwrite[[mutation$cat]] %||% mutations[[mutation$cat]]$prob
   })
   return(probs)
 }
 
-get_srcref <- function(ast) {
+get_srcref <- function(ast, parent = NULL) {
   srcref <- getSrcref(ast)
   if (is.null(srcref)) {
-    stop("uff")
+    return(parent)
   }
   return(srcref)
 }
 
-compare_srcrefs <- function(srcref1, srcref2) {
-  all.equal(srcref1, srcref2)
+compare_identifier <- function(elem, mut) {
+  is_id <- get_id(elem)
+  target_id <- mut$node_id
+  return(is_id == target_id)
 }
 
 #' Generate n mutations for the given abstract syntax tree.
@@ -30,41 +32,70 @@ compare_srcrefs <- function(srcref1, srcref2) {
 #' file path and returns a boolean indicating whether the mutation can be applied.
 #' @param probabilities A named list of probabilities for each mutation. If a mutation
 #' is not in the list, the default probability is used.
+#' @param seed The seed that determines what mutations are selected. If NULL, a random
+#' seed is used.
 #'
 #' @return A list of n mutated abstract syntax trees with the applied mutation
 #'
 #' @export
-generate_mutations <- function(asts, n, filter = function(...) TRUE, probabilities = list()) {
+generate_mutations <- function(asts, n, filter = function(...) TRUE, probabilities = list(), seed = NULL) {
+  set.seed(seed) # TODO: return seed
   applicable <- list()
   for (file in names(asts)) {
-    applicable_per_file <- find_applicable_mutations(asts[[file]])
-    for (mutation in names(applicable_per_file)) {
-      for (srcref in applicable_per_file[[mutation]]) {
-        p <- filter(mutation, srcref, file)
-        if (isFALSE(p)) next
-        applicable <- append(applicable, list(list(mutation = mutation, srcref = srcref, file = file)))
-      }
+    applicable <- find_applicable_mutations(asts[[file]])
+    for (mutation in names(applicable)) {
+      p <- filter(mutation$cat, mutation$srcref, file)
+      if (isFALSE(p)) next
+      applicable <- append(applicable, list(list(mutation = mutation, srcref = srcref, file = file)))
     }
   }
 
   if (length(applicable) < n) {
     cat("Only", length(applicable), "mutations found. Requested", n, "mutations.\n")
     n <- length(applicable)
+  } else {
+    cat("Found", length(applicable), "mutations.\n")
   }
 
   mutants <- list()
   for (mutation in sample(applicable, n, prob = build_probs(applicable, probabilities))) {
-    mutant <- apply_mutation(asts[[mutation$file]], mutation$mutation, mutation$srcref)
-    mutants <- append(mutants, list(c(mutation, list(mutant = mutant))))
+    file <- getSrcFilename(mutation$srcref, full.names = TRUE)
+    mutant <- apply_mutation(asts[[file]], mutation)
+    mutants <- append(mutants, list(append(mutation, list(mutant = mutant))))
   }
   return(mutants)
 }
 
+# FIXME: print(x = 2, y = 2) entfernt die namen
 test <- function() {
+  # files <- c(
+  #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/askpass.R",
+  #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/interactive.R",
+  #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/onload.R",
+  #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/ssh.R"
+  # )
   files <- c(
-    "/home/luke/src/master-thesis/package/R/flowr_utils.R", # nolint
-    "/home/luke/src/master-thesis/package/R/utils.R" # nolint
+    "/home/luke/src/master-thesis/mutatR/example.R" # nolint
   )
+  asts <- files |>
+    lapply(parse, keep.source = TRUE) |>
+    setNames(files) |>
+    lapply(add_srcrefs) |>
+    lapply(add_ids)
+  mutants <- generate_mutations(asts, 1000)
+  for (mutant in mutants) {
+    if (is.expression(mutant$mutant)) {
+      code <- lapply(mutant$mutant, deparse, control = NULL) |> paste(collapse = "\n")
+    } else {
+      code <- deparse(mutant, control = NULL)
+    }
+    cat(code, "\n\n")
+  }
+}
+
+test2 <- function(pkg) {
+  src_path <- file.path(pkg, "R")
+  files <- list.files(src_path, recursive = TRUE, full.names = TRUE, pattern = "\\.R$")
   asts <- lapply(files, parse, keep.source = TRUE) |> setNames(files)
   asts <- lapply(asts, add_srcrefs)
   invisible(generate_mutations(asts, 1000))

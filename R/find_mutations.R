@@ -1,44 +1,42 @@
 find_applicable_mutations <- function(ast) {
   muts <- list()
-  for (key in names(mutations)) {
-    muts[[key]] <- c()
-  }
   visitor <- list(
-    exprlist = function(es, v, ...) lapply(es, visit, v, roles$ExprList),
-    pairlist = function(l, v, ...) lapply(l, visit, v, roles$PairList),
-    atomic = function(a, v, r) {
+    exprlist = function(es, v, r, p) lapply(es, function(e) visit(e, v, roles$ExprList, get_srcref(e, p))),
+    pairlist = function(ls, v, r, p) lapply(ls, function(e) visit(e, v, roles$PairList, get_srcref(e, p))),
+    atomic = function(a, v, r, p) {
       for (m in all_applicable(a, r)) {
-        new_mut <- get_srcref(a)
-        muts[[m]] <<- append(muts[[m]], list(new_mut))
+        muts <<- append(muts, list(m |> append(list(srcref = get_srcref(a, p), node_id = get_id(a)))))
       }
     },
-    name = function(n, v, r) {
+    name = function(n, v, r, p) {
       for (m in all_applicable(n, r)) {
-        new_mut <- get_srcref(n)
-        muts[[m]] <<- append(muts[[m]], list(new_mut))
+        muts <<- append(muts, list(m |> append(list(srcref = get_srcref(n, p), node_id = get_id(n)))))
       }
     },
-    call = function(cl, v, r) {
+    call = function(cl, v, r, p) {
+      srcref <- get_srcref(cl, p)
+      id <- get_id(cl)
+
       for (m in all_applicable(cl, r)) {
-        new_mut <- get_srcref(cl)
-        muts[[m]] <<- append(muts[[m]], list(new_mut))
+        muts <<- append(muts, list(m |> append(list(srcref = srcref, node_id = id))))
       }
 
       parts <- split_up_call(cl)
       f <- parts$name
       as <- parts$args
 
-      visit(f, v, roles$FunName)
+      visit(f, v, roles$FunName, srcref)
       arg_role <- switch(name_as_string(f),
         "while" = roles$Cond,
         "if" = roles$Cond,
         "return" = roles$Ret,
+        "{" = roles$ExprList,
         roles$Arg
       )
-      lapply(as, visit, v, arg_role)
+      lapply(as, visit, v, arg_role, srcref)
     }
   )
 
-  visit(ast, visitor, roles$Root)
+  visit(ast, visitor, roles$Root, NULL)
   return(muts)
 }

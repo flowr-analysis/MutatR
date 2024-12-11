@@ -16,9 +16,9 @@ apply_on_list <- function(l, v) {
   return(list(finished = finished, ast = new_l))
 }
 
-apply_mutation <- function(ast, mutation, srcref) {
-  mut <- mutations[[mutation]]$mutation
-  cat("Applying", mutation, "at", srcref, "\n")
+apply_mutation <- function(ast, mutation) {
+  srcref <- mutation$srcref
+  cat("Applying", mutation$cat, "at position", srcref, "with node id", mutation$node_id, "\n")
   visitor <- list(
     exprlist = function(es, v, ...) {
       new_list <- apply_on_list(es, v)
@@ -29,14 +29,14 @@ apply_mutation <- function(ast, mutation, srcref) {
       return(list(finished = new_list$finished, ast = as.pairlist(new_list$ast)))
     },
     atomic = function(a, ...) {
-      if (compare_srcrefs(a, srcref)) {
-        return(list(finished = TRUE, ast = mut$mutate(a)))
+      if (compare_identifier(a, mutation)) {
+        return(list(finished = TRUE, ast = mutation$fun()))
       }
       return(list(finished = FALSE, ast = a))
     },
     name = function(n, ...) {
-      if (compare_srcrefs(n, srcref)) {
-        return(list(finished = TRUE, ast = mut$mutate(n)))
+      if (compare_identifier(n, mutation)) {
+        return(list(finished = TRUE, ast = mutation$fun()))
       }
       return(list(finished = FALSE, ast = n))
     },
@@ -45,8 +45,8 @@ apply_mutation <- function(ast, mutation, srcref) {
       f <- parts$name
       as <- parts$args
 
-      if (compare_srcrefs(cl, srcref)) {
-        return(list(finished = TRUE, ast = mut$mutate(cl)))
+      if (compare_identifier(cl, mutation)) {
+        return(list(finished = TRUE, ast = mutation$fun()))
       }
 
       new_name <- visit(f, v)

@@ -1,24 +1,44 @@
-bool_swap <- list(
-  is_applicable = function(ast, role) {
-    return(is.logical(ast))
-  },
-  mutate = function(ast) {
-    if (identical(ast, quote(TRUE))) {
-      return(quote(FALSE))
-    }
-    if (identical(ast, quote(FALSE))) {
-      return(quote(TRUE))
-    }
-    return(ast)
+rename_op <- function(ast, to) {
+  eval(to)
+  if (is.name(ast)) {
+    return(function() as.name(to))
   }
-)
+  return(function() {
+    ast[[1]] <- as.name(to)
+    return(ast)
+  })
+}
 
-increment <- list(
+appl_fun <- function(f, ...) {
+  args <- list(...)
+  return(function() as.call(c(as.name(f), args)) |> eval())
+}
+
+literal <- list( # nolint: cyclocomp_linter.
   is_applicable = function(ast, role) {
-    return(is.numeric(ast))
+    return(is.numeric(ast) || is.character(ast) || is.logical(ast) || identical(ast, quote(NULL)))
   },
-  mutate = function(ast) {
-    return(ast + sample(c(-1, 1), 1))
+  get_mutations = function(ast) {
+    muts <- list()
+    if (is.numeric(ast)) {
+      for (inc in c(-1, 1, NA)) {
+        id <- sprintf("%d:%d", as.numeric(ast), inc)
+        muts <- append(muts, list(list(mut_id = id, fun = appl_fun("+", ast, inc))))
+      }
+      return(muts)
+    }
+    if (identical(ast, quote(NULL))) {
+      return(list(list(mut_id = "null:42", fun = function() quote(42))))
+    }
+    if (isFALSE(ast)) {
+      return(list(list(mut_id = "false:true", fun = function() quote(TRUE))))
+    }
+    if (isTRUE(ast)) {
+      return(list(list(mut_id = "true:false", fun = function() quote(FALSE))))
+    }
+    if (is.character(ast)) {
+      return(list(list(mut_id = "str", fun = NULL))) # TODO
+    }
   }
 )
 
@@ -32,9 +52,14 @@ logic <- list(
   is_applicable = function(ast, role) {
     return(is.call(ast) && length(ast) - 1 == 2 && name_as_string(ast[[1]]) %in% names(logic_mutations))
   },
-  mutate = function(ast) {
-    ast[[1]] <- as.name(sample(logic_mutations[[ast[[1]]]], 1))
-    return(ast)
+  get_mutations = function(ast) {
+    muts <- list()
+    name <- ast[[1]] |> as.character()
+    for (to in logic_mutations[[name]]) {
+      id <- sprintf("%s:%s", name, to)
+      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+    }
+    return(muts)
   }
 )
 
@@ -50,9 +75,14 @@ negative_condition <- list(
   is_applicable = function(ast, role) {
     return(is.call(ast) && length(ast) - 1 == 2 && name_as_string(ast[[1]]) %in% names(negativ_cond_mutations))
   },
-  mutate = function(ast) {
-    ast[[1]] <- as.name(sample(negativ_cond_mutations[[ast[[1]]]], 1))
-    return(ast)
+  get_mutations = function(ast) {
+    muts <- list()
+    name <- ast[[1]] |> as.character()
+    for (to in negativ_cond_mutations[[name]]) {
+      id <- sprintf("%s:%s", name, to)
+      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+    }
+    return(muts)
   }
 )
 
@@ -66,9 +96,14 @@ condition_boundary <- list(
   is_applicable = function(ast, role) {
     return(is.call(ast) && length(ast) - 1 == 2 && name_as_string(ast[[1]]) %in% names(cond_boundary_mutations))
   },
-  mutate = function(ast) {
-    ast[[1]] <- as.name(sample(cond_boundary_mutations[[ast[[1]]]], 1))
-    return(ast)
+  get_mutations = function(ast) {
+    muts <- list()
+    name <- ast[[1]] |> as.character()
+    for (to in cond_boundary_mutations[[name]]) {
+      id <- sprintf("%s:%s", name, to)
+      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+    }
+    return(muts)
   }
 )
 
@@ -82,27 +117,48 @@ arithmetic <- list(
   is_applicable = function(ast, role) {
     return(is.call(ast) && length(ast) - 1 == 2 && name_as_string(ast[[1]]) %in% names(arithmetic_mutations))
   },
-  mutate = function(ast) {
-    ast[[1]] <- as.name(sample(arithmetic_mutations[[ast[[1]]]], 1))
-    return(ast)
+  get_mutations = function(ast) {
+    muts <- list()
+    name <- ast[[1]] |> as.character()
+    for (to in arithmetic_mutations[[name]]) {
+      id <- sprintf("%s:%s", name, to)
+      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+    }
+    return(muts)
   }
 )
 
+name_mutations <- list(
+  "lapply" = c("sapply", "vapply"),
+  "sapply" = c("vapply"),
+  "vapply" = c("sapply"),
+  "isFALSE" = c("isTRUE"),
+  "isTRUE" = c("isFALSE")
+)
 function_name <- list(
   is_applicable = function(ast, role) {
-    return(is.name(ast) && role == roles$FunName && name_as_string(ast) %in% c("lapply", "sapply", "vapply"))
+    return(is.name(ast) && role == roles$FunName && name_as_string(ast) %in% names(name_mutations))
   },
-  mutate = function(ast) {
-    return(as.name(sample(c("lapply", "sapply", "vapply"), 1)))
+  get_mutations = function(ast) {
+    muts <- list()
+    name <- ast |> as.character()
+    for (to in name_mutations[[name]]) {
+      id <- sprintf("%s:%s", name, to)
+      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+    }
+    return(muts)
   }
 )
 
 branch_condition <- list(
   is_applicable = function(ast, role) {
-    return(role == roles$Cond)
+    return(role == roles$Cond && !identical(ast, quote(TRUE) && !identical(ast, quote(FALSE))))
   },
-  mutate = function(ast) {
-    return(sample(c(quote(TRUE), quote(FALSE)), 1))
+  get_mutations = function(ast) {
+    return(list(
+      list(mut_id = "true", fun = function() quote(TRUE)),
+      list(mut_id = "false", fun = function() quote(FALSE))
+    ))
   }
 )
 
@@ -114,9 +170,14 @@ sign_swap <- list(
   is_applicable = function(ast, role) {
     return(is.call(ast) && length(ast) - 1 == 1 && name_as_string(ast[[1]]) %in% names(unary_oper_mutations))
   },
-  mutate = function(ast) {
-    ast[[1]] <- as.name(sample(unary_oper_mutations[[ast[[1]]]], 1))
-    return(ast)
+  get_mutations = function(ast) {
+    muts <- list()
+    name <- ast[[1]] |> as.character()
+    for (to in unary_oper_mutations[[name]]) {
+      id <- sprintf("%s:%s", name, to)
+      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+    }
+    return(muts)
   }
 )
 
@@ -128,8 +189,8 @@ void_call <- list(
   is_applicable = function(ast, role) {
     return(is.call(ast) && role == roles$ExprList && !is_assignment(name_as_string(ast[[1]])))
   },
-  mutate = function(ast) {
-    return(NULL)
+  get_mutations = function(ast) {
+    return(list(list(mut_id = "remove", fun = function() NULL)))
   }
 )
 
@@ -137,11 +198,55 @@ return_value <- list(
   is_applicable = function(ast, role) {
     return(role == roles$Ret)
   },
-  mutate = function(ast) {
+  get_mutations = function(ast) {
     if (identical(ast, quote(NULL))) {
-      return(quote(numeric(length = 0)))
+      return(list(list(mut_id = "nonnull", fun = function() quote(42))))
     }
-    return(quote(NULL))
+    return(list(list(mut_id = "null", fun = function() quote(NULL))))
+  }
+)
+
+mutate_c <- list(
+  is_applicable = function(ast, role) {
+    return(is.call(ast) && name_as_string(ast[[1]]) == "c")
+  },
+  get_mutations = function(ast) {
+    if (length(ast) - 1 == 0) { # no arguments provided
+      return(list(list(mut_id = "non-empty", fun = function() quote(42))))
+    }
+    return(list(
+      list(mut_id = "remove", fun = function() {
+        as <- as.list(ast[-1])
+        as <- as[-sample(seq_along(as), 1)]
+        return(as.call(c(ast[[1]], as))) # remove one component
+      }),
+      list(mut_id = "add", fun = function() {
+        as <- as.list(ast[-1])
+        as <- c(as, quote(41))
+        return(as.call(c(ast[[1]], as))) # add one component
+      })
+    ))
+  }
+)
+
+mutate_identical <- list(
+  is_applicable = function(ast, role) {
+    return(is.call(ast) && name_as_string(ast[[1]]) %in% c("==", "identical") && length(ast) - 1 >= 2)
+  },
+  get_mutations = function(ast) {
+    name <- ast[[1]]
+    if (name == "identical") {
+      return(list(list(mut_id = "identical:==", fun = function() {
+        as <- head(as.list(ast[-1]), 2)
+        return(as.call(c(as.name("=="), as)))
+      })))
+    }
+    if (name == "==") {
+      return(list(list(mut_id = "==:identical", fun = function() {
+        as <- as.list(ast[-1])
+        return(as.call(c(as.name("identical"), as)))
+      })))
+    }
   }
 )
 
@@ -151,13 +256,14 @@ mutations <- list(
   "branch condition" = list(prob = 0.5, mutation = branch_condition),
   "condition boundary" = list(prob = 0.5, mutation = condition_boundary),
   "function name" = list(prob = 0.5, mutation = function_name),
-  "increment" = list(prob = 0.5, mutation = increment),
+  "literal" = list(prob = 0.5, mutation = literal),
   "logic" = list(prob = 0.5, mutation = logic),
   "negative condition" = list(prob = 0.5, mutation = negative_condition),
-  "swap boolean" = list(prob = 0.5, mutation = bool_swap),
   "swap sign" = list(prob = 0.5, mutation = sign_swap),
   "void call" = list(prob = 0.5, mutation = void_call),
-  "return value" = list(prob = 0.5, mutation = return_value)
+  "return value" = list(prob = 0.5, mutation = return_value),
+  "mutate c" = list(prob = 0.5, mutation = mutate_c),
+  "mutate identical" = list(prob = 0.5, mutation = mutate_identical)
 )
 
 any_applicable <- function(ast, role) {
@@ -165,12 +271,13 @@ any_applicable <- function(ast, role) {
 }
 
 all_applicable <- function(ast, role) {
-  muts <- c()
+  res <- list()
   for (key in names(mutations)) {
     mut <- mutations[[key]]$mutation
     if (mut$is_applicable(ast, role)) {
-      muts <- c(muts, key)
+      muts <- mut$get_mutations(ast) |> lapply(append, list(cat = key))
+      res <- c(res, muts)
     }
   }
-  return(muts)
+  return(res)
 }
