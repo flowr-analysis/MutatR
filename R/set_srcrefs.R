@@ -97,7 +97,6 @@ cal <- function(cl, v, pd, srcfile, parent_srcref) {
       } else if (name_as_string(f) %in% ops && length(as) == 1) {
         list(pd$children[[2]][[1]])
       } else {
-        # cat(sprintf("unknown function %s\n", name_as_string(f)))
         is_normal_call <- {
           expected_len <- if (length(as) == 0) 3 else length(as) + length(as) - 1 + 3
           expected_len == length(pd$children)

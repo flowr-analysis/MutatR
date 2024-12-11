@@ -68,12 +68,14 @@ generate_mutants <- function(asts, n, filter = function(...) TRUE, probabilities
 
 # FIXME: print(x = 2, y = 2) entfernt die namen
 test <- function() {
+  # nolint start
   # files <- c(
   #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/askpass.R",
   #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/interactive.R",
   #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/onload.R",
   #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/ssh.R"
   # )
+  # nolint end
   files <- c(
     "/home/luke/src/master-thesis/mutatR/example.R" # nolint
   )
