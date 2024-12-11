@@ -38,7 +38,7 @@ compare_identifier <- function(elem, mut) {
 #' @return A list of n mutated abstract syntax trees with the applied mutation
 #'
 #' @export
-generate_mutations <- function(asts, n, filter = function(...) TRUE, probabilities = list(), seed = NULL) {
+generate_mutants <- function(asts, n, filter = function(...) TRUE, probabilities = list(), seed = NULL) {
   set.seed(seed) # TODO: return seed
   applicable <- list()
   for (file in names(asts)) {
@@ -82,7 +82,7 @@ test <- function() {
     setNames(files) |>
     lapply(add_srcrefs) |>
     lapply(add_ids)
-  mutants <- generate_mutations(asts, 1000)
+  mutants <- generate_mutants(asts, 1000)
   for (mutant in mutants) {
     if (is.expression(mutant$mutant)) {
       code <- lapply(mutant$mutant, deparse, control = NULL) |> paste(collapse = "\n")
@@ -98,5 +98,5 @@ test2 <- function(pkg) {
   files <- list.files(src_path, recursive = TRUE, full.names = TRUE, pattern = "\\.R$")
   asts <- lapply(files, parse, keep.source = TRUE) |> setNames(files)
   asts <- lapply(asts, add_srcrefs)
-  invisible(generate_mutations(asts, 1000))
+  invisible(generate_mutants(asts, 1000))
 }
