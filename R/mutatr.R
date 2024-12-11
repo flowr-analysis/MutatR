@@ -77,11 +77,7 @@ test <- function() {
   files <- c(
     "/home/luke/src/master-thesis/mutatR/example.R" # nolint
   )
-  asts <- files |>
-    lapply(parse, keep.source = TRUE) |>
-    setNames(files) |>
-    lapply(add_srcrefs) |>
-    lapply(add_ids)
+  asts <- files |> lapply(parse, keep.source = TRUE) |> setNames(files) |> lapply(add_srcrefs) |> lapply(add_ids)
   mutants <- generate_mutants(asts, 1000)
   for (mutant in mutants) {
     if (is.expression(mutant$mutant)) {
