@@ -251,6 +251,27 @@ mutate_identical <- list(
   }
 )
 
+create_call <- list(
+  is_applicable = function(ast, role) {
+    return(is.call(ast) && ast[[1]] == "{")
+  },
+  get_mutations = function(ast) {
+    return(list(list(
+      id = "add warning",
+      fun = function() {
+        as <- c(as.list(ast[-1]), quote(warning("warning created by mutatr")))
+        return(as.call(c(ast[[1]], as)))
+      }
+    ), list(
+      id = "add error",
+      fun = function() {
+        as <- c(as.list(ast[-1]), quote(stop("error created by mutatr")))
+        return(as.call(c(ast[[1]], as)))
+      }
+    )))
+  }
+)
+
 # https://pitest.org/quickstart/mutators/
 mutations <- list(
   "arithmetic" = list(prob = 0.5, mutation = arithmetic),
@@ -264,7 +285,8 @@ mutations <- list(
   "void call" = list(prob = 0.5, mutation = void_call),
   "return value" = list(prob = 0.5, mutation = return_value),
   "mutate c" = list(prob = 0.5, mutation = mutate_c),
-  "mutate identical" = list(prob = 0.5, mutation = mutate_identical)
+  "mutate identical" = list(prob = 0.5, mutation = mutate_identical),
+  "create call" = list(prob = 0.5, mutation = create_call)
 )
 
 any_applicable <- function(ast, role) {
