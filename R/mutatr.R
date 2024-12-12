@@ -51,11 +51,11 @@ generate_mutants <- function(asts, n, filter = function(...) TRUE, probabilities
   set.seed(seed) # TODO: return seed
   applicable <- list()
   for (file in names(asts)) {
-    applicable <- find_applicable_mutations(asts[[file]])
-    for (mutation in names(applicable)) {
+    applicable_per_file <- find_applicable_mutations(asts[[file]])
+    for (mutation in applicable_per_file) {
       p <- filter(mutation$cat, mutation$srcref, file)
       if (isFALSE(p)) next
-      applicable <- append(applicable, list(list(mutation = mutation, srcref = srcref, file = file)))
+      applicable <- c(applicable, applicable_per_file)
     }
   }
 
