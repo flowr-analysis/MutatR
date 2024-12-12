@@ -16,13 +16,13 @@ appl_fun <- function(f, ...) {
 
 literal <- list( # nolint: cyclocomp_linter.
   is_applicable = function(ast, role) {
-    return(is.numeric(ast) || is.character(ast) || is.logical(ast) || identical(ast, quote(NULL)))
+    return(is.atomic(ast) && !is.na(ast) && (is.numeric(ast) || is.character(ast) || is.logical(ast) || identical(ast, quote(NULL))))
   },
   get_mutations = function(ast) {
     muts <- list()
     if (is.numeric(ast)) {
       for (inc in c(-1, 1, NA)) {
-        id <- sprintf("%d:%d", as.numeric(ast), inc)
+        id <- sprintf("%f:%d", as.numeric(ast), inc)
         muts <- append(muts, list(list(mut_id = id, fun = appl_fun("+", ast, inc))))
       }
       return(muts)
