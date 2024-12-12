@@ -75,7 +75,6 @@ generate_mutants <- function(asts, n, filter = function(...) TRUE, probabilities
   return(mutants)
 }
 
-# FIXME: Calls with call as name x(1)(2)
 test <- function() {
   # nolint start
   # files <- c(
@@ -91,7 +90,7 @@ test <- function() {
   asts <- files |>
     lapply(parse, keep.source = TRUE) |>
     setNames(files) |>
-    lapply(standardize_calls) |>
+    # lapply(standardize_calls) |> # does not work if we don't source the file into an environment
     lapply(add_srcrefs) |>
     lapply(set_ids)
   mutants <- generate_mutants(asts, 1000)
