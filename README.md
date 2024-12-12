@@ -65,6 +65,6 @@ We currently support the following mutations (in no particular order):
     | `NULL`          | `42`     |
     | everything else | `NULL`   |
 - Vector modification:
-    - Wenn the function `c` is called, we either remove or add an additional element
+    - Wenn the function `c` is called, we either remove and element, add an additional, or remove all elements
 - Call insertion
     - A call to `stop` or `warning` is inserted into blocks (`{ ... }`)
