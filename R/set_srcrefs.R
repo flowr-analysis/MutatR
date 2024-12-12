@@ -116,17 +116,17 @@ cal <- function(cl, v, pd, srcfile, parent_srcref) {
     arg <- as[[i]]
     arg_pd <- arg_pds[[i]]
     visit(arg, v, arg_pd, srcfile, cl_srcref)
-  }) |> setNames(names(as))
+  }) |> stats::setNames(names(as))
   f <- (visit(f, v, pd$children[[1]][[1]], srcfile, cl_srcref))
   return(as.call(c(f, as)) |> copy_attribs(cl) |> set_srcref(cl_srcref))
 }
 
 add_srcrefs <- function(ast) {
-  pd <- getParseData(ast) |> make_pd_hirarchy()
+  pd <- utils::getParseData(ast) |> make_pd_hirarchy()
   visitor <- list(
     exprlist = function(es, v, pd, srcfile, parent_srcref) {
       srcfile <- attr(es, "srcfile")
-      srcrefs <- getSrcref(es)
+      srcrefs <- utils::getSrcref(es)
       lapply(seq_along(es), function(i) {
         e <- es[[i]]
         pd <- pd[[i]]

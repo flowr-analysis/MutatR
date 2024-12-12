@@ -10,7 +10,7 @@ build_probs <- function(mutants, overwrite) {
 }
 
 get_srcref <- function(ast, parent = NULL) {
-  srcref <- getSrcref(ast) %||% parent
+  srcref <- utils::getSrcref(ast) %||% parent
   return(srcref)
 }
 
@@ -47,7 +47,12 @@ copy_attribs <- function(dest, src, filter = c("node_id")) {
 #' @return A list of n mutated abstract syntax trees with the applied mutation
 #'
 #' @export
-generate_mutants <- function(asts, n, filter = function(...) TRUE, probabilities = list(), seed = NULL) {
+generate_mutants <- function(
+    asts, n,
+    filter = function(...) TRUE,
+    probabilities = list(),
+    seed = NULL,
+    require_parsable = TRUE) {
   set.seed(seed) # TODO: return seed
   applicable <- list()
   for (file in names(asts)) {
@@ -89,7 +94,7 @@ test <- function() {
   )
   asts <- files |>
     lapply(parse, keep.source = TRUE) |>
-    setNames(files) |>
+    stats::setNames(files) |>
     # lapply(standardize_calls) |> # does not work if we don't source the file into an environment
     lapply(add_srcrefs) |>
     lapply(set_ids)
@@ -107,7 +112,7 @@ test <- function() {
 test2 <- function(pkg) {
   src_path <- file.path(pkg, "R")
   files <- list.files(src_path, recursive = TRUE, full.names = TRUE, pattern = "\\.R$")
-  asts <- lapply(files, parse, keep.source = TRUE) |> setNames(files)
+  asts <- lapply(files, parse, keep.source = TRUE) |> stats::setNames(files)
   asts <- lapply(asts, add_srcrefs)
   invisible(generate_mutants(asts, 1000))
 }
