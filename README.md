@@ -1,6 +1,6 @@
 # MutatR
 
-Mutation testing for R.
+Mutate R code.
 
 ## Available Mutators
 We currently support the following mutations (in no particular order):
