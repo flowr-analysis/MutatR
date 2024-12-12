@@ -35,7 +35,7 @@ We currently support the following mutations (in no particular order):
 - Literal mutation:
     - Numeric literals are replaced by `NA` or in- or decremented by 1
     - Logical literals are replaced by their negation
-    - Character literals are TODO
+    - Character literals are modified by appending to the end, removing the first character, or by replacing it with an empty string
 - Logic operator replacement:
     | Original | Mutation |
     |----------|----------|

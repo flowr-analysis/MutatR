@@ -37,7 +37,26 @@ literal <- list( # nolint: cyclocomp_linter.
       return(list(list(mut_id = "true:false", fun = function() quote(FALSE))))
     }
     if (is.character(ast)) {
-      return(list(list(mut_id = "str", fun = function() ast))) # TODO: impl
+      if (nchar(ast) == 0) {
+        return(list(list(mut_id = "add", fun = function() quote("mutatr string"))))
+      }
+
+      muts <- (list(list(
+        mut_id = "add",
+        fun = function() substring(ast, 2)
+      ), list(
+        mut_id = "remove",
+        fun = function() paste(ast, "mutated")
+      )))
+
+      if (nchar(ast) > 1) {
+        muts <- append(muts, list(list(
+          mut_id = "empty",
+          fun = function() quote("")
+        )))
+      }
+
+      return(muts)
     }
   }
 )
@@ -213,20 +232,31 @@ mutate_c <- list(
   },
   get_mutations = function(ast) {
     if (length(ast) - 1 == 0) { # no arguments provided
-      return(list(list(mut_id = "non-empty", fun = function() quote(42))))
+      return(list(list(mut_id = "add", fun = function() quote(42))))
     }
-    return(list(
+    muts <- list(
       list(mut_id = "remove", fun = function() {
         as <- as.list(ast[-1])
         as <- as[-sample(seq_along(as), 1)]
-        return(as.call(c(ast[[1]], as))) # remove one component
+        return(as.call(c(ast[[1]], as)))
       }),
       list(mut_id = "add", fun = function() {
         as <- as.list(ast[-1])
         as <- c(as, quote(41))
-        return(as.call(c(ast[[1]], as))) # add one component
+        return(as.call(c(ast[[1]], as)))
       })
-    ))
+    )
+
+    if (length(ast[-1]) > 1) {
+      muts <- append(muts, list(
+        list(mut_id = "empty", fun = function() {
+          as <- list()
+          return(as.call(c(ast[[1]], as)))
+        })
+      ))
+    }
+
+    return(muts)
   }
 )
 
