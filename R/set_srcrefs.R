@@ -132,7 +132,9 @@ add_srcrefs <- function(ast) {
         pd <- pd[[i]]
         srcref <- srcrefs[[i]]
         visit(e, v, pd, srcfile, srcref) # not really the parent srcref but whatever
-      }) |> as.expression() |> copy_attribs(es)
+      }) |>
+        as.expression() |>
+        copy_attribs(es)
     },
     pairlist = function(l, v, pd, srcfile, parent_srcref) set_srcref_alt(l, pd$elem, srcfile, parent_srcref),
     atomic = function(a, v, pd, srcfile, parent_srcref) set_srcref_alt(a, pd$elem, srcfile, parent_srcref),
