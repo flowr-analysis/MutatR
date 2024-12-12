@@ -286,10 +286,10 @@ create_call <- list(
     return(is.call(ast) && ast[[1]] == "{")
   },
   get_mutations = function(ast) {
-    return(list(list(id = "add warning", fun = function() {
+    return(list(list(mut_id = "add warning", fun = function() {
       as <- c(as.list(ast[-1]), quote(warning("warning created by mutatr")))
       return(as.call(c(ast[[1]], as)))
-    }), list(id = "add error", fun = function() {
+    }), list(mut_id = "add error", fun = function() {
       as <- c(as.list(ast[-1]), quote(stop("error created by mutatr")))
       return(as.call(c(ast[[1]], as)))
     })))
