@@ -37,7 +37,7 @@ literal <- list( # nolint: cyclocomp_linter.
       return(list(list(mut_id = "true:false", fun = function() quote(FALSE))))
     }
     if (is.character(ast)) {
-      return(list(list(mut_id = "str", fun = NULL))) # TODO
+      return(list(list(mut_id = "str", fun = function() ast))) # TODO: impl
     }
   }
 )

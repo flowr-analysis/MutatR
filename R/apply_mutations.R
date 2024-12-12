@@ -55,7 +55,7 @@ apply_mutation <- function(ast, mutation) {
       }
 
       new_args <- apply_on_list(as, v)
-      new_call <- as.call(c(new_name$ast, new_args$ast))
+      new_call <- as.call(c(new_name$ast, new_args$ast)) |> copy_attribs(cl)
       return(list(finished = new_args$finished, ast = new_call))
     }
   )

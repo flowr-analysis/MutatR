@@ -10,10 +10,7 @@ build_probs <- function(applicable, overwrite) {
 }
 
 get_srcref <- function(ast, parent = NULL) {
-  srcref <- getSrcref(ast)
-  if (is.null(srcref)) {
-    return(parent)
-  }
+  srcref <- getSrcref(ast) %||% parent
   return(srcref)
 }
 
@@ -21,6 +18,18 @@ compare_identifier <- function(elem, mut) {
   is_id <- get_id(elem)
   target_id <- mut$node_id
   return(is_id == target_id)
+}
+
+copy_attribs <- function(dest, src, filter = c("node_id")) {
+  filter <- c(filter, names(attributes(dest))) |> unique()
+
+  src_attrs <- attributes(src)
+  src_attrs <- src_attrs[!names(src_attrs) %in% filter]
+
+  dest_attrs <- attributes(dest)
+  attributes(dest) <- c(src_attrs, dest_attrs)
+
+  return(dest)
 }
 
 #' Generate n mutations for the given abstract syntax tree.
@@ -66,7 +75,7 @@ generate_mutants <- function(asts, n, filter = function(...) TRUE, probabilities
   return(mutants)
 }
 
-# FIXME: print(x = 2, y = 2) entfernt die namen
+# FIXME: Calls with call as name x(1)(2)
 test <- function() {
   # nolint start
   # files <- c(
@@ -79,7 +88,12 @@ test <- function() {
   files <- c(
     "/home/luke/src/master-thesis/mutatR/example.R" # nolint
   )
-  asts <- files |> lapply(parse, keep.source = TRUE) |> setNames(files) |> lapply(add_srcrefs) |> lapply(add_ids)
+  asts <- files |>
+    lapply(parse, keep.source = TRUE) |>
+    setNames(files) |>
+    lapply(standardize_calls) |>
+    lapply(add_srcrefs) |>
+    lapply(set_ids)
   mutants <- generate_mutants(asts, 1000)
   for (mutant in mutants) {
     if (is.expression(mutant$mutant)) {

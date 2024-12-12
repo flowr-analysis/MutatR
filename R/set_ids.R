@@ -25,19 +25,7 @@ get_id <- function(elem) {
   return(attr(elem, "node_id"))
 }
 
-copy_attribs <- function(dest, src, filter = c("node_id")) {
-  filter <- c(filter, names(attributes(dest))) |> unique()
-
-  src_attrs <- attributes(src)
-  src_attrs <- src_attrs[!names(src_attrs) %in% filter]
-
-  dest_attrs <- attributes(dest)
-  attributes(dest) <- c(src_attrs, dest_attrs)
-
-  return(dest)
-}
-
-add_ids <- function(ast) {
+set_ids <- function(ast) {
   visitor <- list(
     exprlist = function(es, v) {
       es <- set_id(es)

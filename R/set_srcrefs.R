@@ -116,9 +116,9 @@ cal <- function(cl, v, pd, srcfile, parent_srcref) {
     arg <- as[[i]]
     arg_pd <- arg_pds[[i]]
     visit(arg, v, arg_pd, srcfile, cl_srcref)
-  })
+  }) |> setNames(names(as))
   f <- (visit(f, v, pd$children[[1]][[1]], srcfile, cl_srcref))
-  return(as.call(c(f, as)) |> set_srcref(cl_srcref))
+  return(as.call(c(f, as)) |> copy_attribs(cl) |> set_srcref(cl_srcref))
 }
 
 add_srcrefs <- function(ast) {
@@ -132,7 +132,7 @@ add_srcrefs <- function(ast) {
         pd <- pd[[i]]
         srcref <- srcrefs[[i]]
         visit(e, v, pd, srcfile, srcref) # not really the parent srcref but whatever
-      }) |> as.expression()
+      }) |> as.expression() |> copy_attribs(es)
     },
     pairlist = function(l, v, pd, srcfile, parent_srcref) set_srcref_alt(l, pd$elem, srcfile, parent_srcref),
     atomic = function(a, v, pd, srcfile, parent_srcref) set_srcref_alt(a, pd$elem, srcfile, parent_srcref),
