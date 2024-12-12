@@ -272,7 +272,6 @@ create_call <- list(
   }
 )
 
-# https://pitest.org/quickstart/mutators/
 mutations <- list(
   "arithmetic" = list(prob = 0.5, mutation = arithmetic),
   "branch condition" = list(prob = 0.5, mutation = branch_condition),
