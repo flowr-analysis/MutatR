@@ -2,9 +2,9 @@ name_as_string <- function(name) {
   return(paste(name, collapse = ""))
 }
 
-build_probs <- function(applicable, overwrite) {
-  probs <- lapply(applicable, function(mutation) {
-    overwrite[[mutation$cat]] %||% mutations[[mutation$cat]]$prob
+build_probs <- function(mutants, overwrite) {
+  probs <- lapply(mutants, function(mutant) {
+    overwrite[[mutant$cat]] %||% mutations[[mutant$cat]]$prob
   })
   return(probs)
 }
