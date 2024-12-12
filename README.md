@@ -39,10 +39,10 @@ We currently support the following mutations (in no particular order):
 - Logic operator replacement:
     | Original | Mutation |
     |----------|----------|
-    | `&`      | `|`      |
-    | `|`      | `&`      |
-    | `&&`     | `||`     |
-    | `||`     | `&&`     |
+    | `&`      | `\|`      |
+    | `\|`      | `&`      |
+    | `&&`     | `\|\|`     |
+    | `\|\|`     | `&&`     |
 - Relational operator replacement:
     | Original | Mutation |
     |----------|----------|
