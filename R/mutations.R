@@ -1,7 +1,7 @@
 remove_me <- "(: HOPEFULLY THIS TEXT WILL NEVER SHOW UP IN CODE :)"
 
 rename_op <- function(ast, to) {
-  eval(to)
+  force(to)
   if (is.name(ast)) {
     return(function() as.name(to))
   }
