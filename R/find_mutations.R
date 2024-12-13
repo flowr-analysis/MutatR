@@ -31,7 +31,11 @@ find_applicable_mutations <- function(ast) {
         "if" = roles$Cond,
         "return" = roles$Ret,
         "{" = roles$ExprList,
-        roles$Arg
+        {
+          role <- roles$Arg
+          attr(role, "fname") <- name_as_string(f)
+          role
+        }
       )
       lapply(as, visit, v, arg_role, srcref)
     }
