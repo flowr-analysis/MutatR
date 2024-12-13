@@ -28,8 +28,7 @@ get_id <- function(elem) {
 set_ids <- function(ast) {
   visitor <- list(
     exprlist = function(es, v) {
-      es <- set_id(es)
-      return(lapply(es, visit, v) |> as.expression() |> copy_attribs(es))
+      return(lapply(es, visit, v) |> as.expression() |> copy_attribs(es) |> set_id())
     },
     pairlist = function(l, v) set_id(l),
     atomic = function(a, v) set_id(a),

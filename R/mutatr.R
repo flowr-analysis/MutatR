@@ -65,7 +65,8 @@ generate_mutants <- function(
 
       can_apply <- TRUE
       tryCatch(mutant <- apply_mutation(asts[[file]], mutation), error = function(e) {
-        print("Could not apply")
+        cat("Could not apply\n")
+        print(e)
         can_apply <<- FALSE
       })
       if (!can_apply) next

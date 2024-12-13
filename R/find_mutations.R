@@ -1,7 +1,12 @@
 find_applicable_mutations <- function(ast) {
   muts <- list()
   visitor <- list(
-    exprlist = function(es, v, r, p) lapply(es, function(e) visit(e, v, roles$ExprList, get_srcref(e, p))),
+    exprlist = function(es, v, r, p) {
+      for (m in all_applicable(es, r)) {
+        muts <<- append(muts, list(m |> append(list(srcref = srcref, node_id = get_id(es)))))
+      }
+      lapply(es, function(e) visit(e, v, roles$ExprListElem, get_srcref(e, p)))
+    },
     pairlist = function(ls, v, r, p) NULL,
     atomic = function(a, v, r, p) {
       for (m in all_applicable(a, r)) {
@@ -37,10 +42,10 @@ find_applicable_mutations <- function(ast) {
       lapply(seq_along(as), function(i) {
         a <- as[[i]]
         role <- switch(fn,
-          "while" = if (i == 1) roles$Cond else roles$ExprList,
-          "if" = if (i == 1) roles$Cond else roles$ExprList,
+          "while" = if (i == 1) roles$Cond else roles$ExprListElem,
+          "if" = if (i == 1) roles$Cond else roles$ExprListElem,
           "return" = roles$Ret,
-          "{" = roles$ExprList,
+          "{" = roles$ExprListElem,
           default_role
         )
         visit(a, v, role, srcref)

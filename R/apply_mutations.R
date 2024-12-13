@@ -22,6 +22,9 @@ apply_mutation <- function(ast, mutation) {
   cat("Applying", mutation$cat, "at position", srcref, "with node id", mutation$node_id, "\n")
   visitor <- list(
     exprlist = function(es, v, ...) {
+      if (compare_identifier(es, mutation)) {
+        return(list(finished = TRUE, ast = mutation$fun()))
+      }
       new_list <- apply_on_list(es, v)
       return(list(finished = new_list$finished, ast = as.expression(new_list$ast)))
     },

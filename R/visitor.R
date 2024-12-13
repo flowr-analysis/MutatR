@@ -3,8 +3,7 @@ roles <- list(
   FunName = "Function Name",
   Cond = "Condition",
   Ret = "Return",
-  ExprList = "Expression List Element",
-  PairList = "Pair List Element",
+  ExprListElem = "Expression List Element",
   Root = "Root"
 )
 

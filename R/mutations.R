@@ -246,7 +246,7 @@ function_replacement <- list(
     }
 
     name <- name_as_string(ast[[1]])
-    remove_void_call <- role == roles$ExprList && !is_assignment(name)
+    remove_void_call <- role == roles$ExprListElem && !is_assignment(name)
     is_length <- name == "length"
     is_check <- is_check(name)
     return(remove_void_call || is_length || is_check)
@@ -346,16 +346,28 @@ mutate_identical <- list(
 
 create_call <- list(
   is_applicable = function(ast, role) {
-    return(is.call(ast) && ast[[1]] == "{")
+    return(is.expression(ast) || is.call(ast) && ast[[1]] == "{")
   },
   get_mutations = function(ast) {
-    return(list(list(mut_id = "add warning", fun = function() {
-      as <- c(as.list(ast[-1]), quote(warning("warning created by mutatr")))
-      return(as.call(c(ast[[1]], as)))
-    }), list(mut_id = "add error", fun = function() {
-      as <- c(as.list(ast[-1]), quote(stop("error created by mutatr")))
-      return(as.call(c(ast[[1]], as)))
-    })))
+    if (is.expression(ast)) {
+      as <- as.list(ast)
+      return(list(list(mut_id = "add warning", fun = function() {
+        as <- c(as, quote(warning("warning created by mutatr")))
+        return(as.expression(as))
+      }), list(mut_id = "add error", fun = function() {
+        as <- c(as, quote(stop("error created by mutatr")))
+        return(as.expression(as))
+      })))
+    } else if (is.call(ast)) {
+      as <- as.list(ast[-1])
+      return(list(list(mut_id = "add warning", fun = function() {
+        as <- c(as, quote(warning("warning created by mutatr")))
+        return(as.call(c(ast[[1]], as)))
+      }), list(mut_id = "add error", fun = function() {
+        as <- c(as, quote(stop("error created by mutatr")))
+        return(as.call(c(ast[[1]], as)))
+      })))
+    }
   }
 )
 
