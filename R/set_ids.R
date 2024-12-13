@@ -31,10 +31,7 @@ set_ids <- function(ast) {
       es <- set_id(es)
       return(lapply(es, visit, v) |> as.expression() |> copy_attribs(es))
     },
-    pairlist = function(l, v) {
-      new_l <- lapply(l, visit, v) |> setNames(names(l)) |> as.pairlist() |> set_id() |> copy_attribs(l)
-      return(new_l)
-    },
+    pairlist = function(l, v) set_id(l),
     atomic = function(a, v) set_id(a),
     name = function(n, v) set_id(n),
     call = function(cl, v) {

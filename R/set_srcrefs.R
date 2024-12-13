@@ -117,8 +117,20 @@ cal <- function(cl, v, pd, srcfile, parent_srcref) {
     arg_pd <- arg_pds[[i]]
     visit(arg, v, arg_pd, srcfile, cl_srcref)
   }) |> stats::setNames(names(as))
-  f <- (visit(f, v, pd$children[[1]][[1]], srcfile, cl_srcref))
+  f <- visit(f, v, pd$children[[1]][[1]], srcfile, cl_srcref)
   return(as.call(c(f, as)) |> copy_attribs(cl) |> set_srcref(cl_srcref))
+}
+
+has_semicolon <- function(pd) {
+  if (pd$elem$text == ";") {
+    return(TRUE)
+  }
+  lapply(pd$children, function(child) {
+    child <- child[[1]]
+    has_semicolon(child)
+  }) |>
+    unlist() |>
+    any()
 }
 
 add_srcrefs <- function(ast) {
@@ -130,6 +142,11 @@ add_srcrefs <- function(ast) {
       lapply(seq_along(es), function(i) {
         e <- es[[i]]
         pd <- pd[[i]]
+        if (has_semicolon(pd)) { # When a semicolon is present, we have a hard time interpreting the parse data
+          print("Ignored expression because of a semicolon")
+          return(e)
+        }
+        # cat("No semicolon")
         srcref <- srcrefs[[i]]
         visit(e, v, pd, srcfile, srcref) # not really the parent srcref but whatever
       }) |>

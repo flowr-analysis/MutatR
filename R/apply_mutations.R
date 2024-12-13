@@ -12,7 +12,8 @@ apply_on_list <- function(l, v) {
     finished <<- new_e$finished
     return(new_e$ast)
   })
-  new_l <- Filter(function(e) !is.null(e), new_l)
+
+  new_l <- Filter(function(e) !(is.character(e) && e == remove_me), new_l)
   return(list(finished = finished, ast = new_l))
 }
 
@@ -24,9 +25,8 @@ apply_mutation <- function(ast, mutation) {
       new_list <- apply_on_list(es, v)
       return(list(finished = new_list$finished, ast = as.expression(new_list$ast)))
     },
-    pairlist = function(l, v, ...) {
-      new_list <- apply_on_list(l, v)
-      return(list(finished = new_list$finished, ast = as.pairlist(new_list$ast)))
+    pairlist = function(l, ...) {
+      return(list(finished = FALSE, ast = l))
     },
     atomic = function(a, ...) {
       if (compare_identifier(a, mutation)) {

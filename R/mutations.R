@@ -1,3 +1,5 @@
+remove_me <- "(: HOPEFULLY THIS TEXT WILL NEVER SHOW UP IN CODE :)"
+
 rename_op <- function(ast, to) {
   eval(to)
   if (is.name(ast)) {
@@ -42,10 +44,10 @@ literal <- list( # nolint: cyclocomp_linter.
       }
 
       muts <- (list(list(
-        mut_id = "add",
+        mut_id = "remove",
         fun = function() substring(ast, 2)
       ), list(
-        mut_id = "remove",
+        mut_id = "add",
         fun = function() paste(ast, "mutated")
       )))
 
@@ -210,7 +212,7 @@ void_call <- list(
     return(is.call(ast) && role == roles$ExprList && !is_assignment(name_as_string(ast[[1]])))
   },
   get_mutations = function(ast) {
-    return(list(list(mut_id = "remove", fun = function() NULL)))
+    return(list(list(mut_id = "remove", fun = function() remove_me)))
   }
 )
 

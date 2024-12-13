@@ -54,29 +54,50 @@ generate_mutants <- function(
     seed = NULL,
     require_parsable = TRUE) {
   set.seed(seed) # TODO: return seed
-  applicable <- list()
+  mutants <- list()
   for (file in names(asts)) {
+    print(file)
     applicable_per_file <- find_applicable_mutations(asts[[file]])
+    print(length(applicable_per_file))
     for (mutation in applicable_per_file) {
       p <- filter(mutation$cat, mutation$srcref, file)
       if (isFALSE(p)) next
-      applicable <- c(applicable, applicable_per_file)
+
+      can_apply <- TRUE
+      tryCatch(mutant <- apply_mutation(asts[[file]], mutation), error = function(e) {
+        print("Could not apply")
+        can_apply <<- FALSE
+      })
+      if (!can_apply) next
+
+      if (require_parsable) {
+        does_parse <- TRUE
+        if (is.expression(mutant)) {
+          code <- lapply(mutant, deparse, control = NULL) |> paste(collapse = "\n")
+        } else {
+          code <- deparse(mutant, control = NULL)
+        }
+        tryCatch(parse(text = code), error = function(e) {
+          print(e)
+          does_parse <<- FALSE
+        })
+        if (!does_parse) next
+      }
+
+      mutants <- append(mutants, list(append(mutation, list(mutant = mutant))))
     }
+    gc()
   }
 
-  if (length(applicable) < n) {
-    cat("Only", length(applicable), "mutations found. Requested", n, "mutations.\n")
-    n <- length(applicable)
+  if (length(mutants) < n) {
+    cat("Only", length(mutants), "mutations found. Requested", n, "mutations.\n")
+    n <- length(mutants)
   } else {
-    cat("Found", length(applicable), "mutations.\n")
+    cat("Found", length(mutants), "mutations.\n")
   }
 
-  mutants <- list()
-  for (mutation in sample(applicable, n, prob = build_probs(applicable, probabilities))) {
-    file <- getSrcFilename(mutation$srcref, full.names = TRUE)
-    mutant <- apply_mutation(asts[[file]], mutation)
-    mutants <- append(mutants, list(append(mutation, list(mutant = mutant))))
-  }
+  mutants <- sample(mutants, n, prob = build_probs(mutants, probabilities))
+
   return(mutants)
 }
 

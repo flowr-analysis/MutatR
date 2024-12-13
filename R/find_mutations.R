@@ -2,7 +2,7 @@ find_applicable_mutations <- function(ast) {
   muts <- list()
   visitor <- list(
     exprlist = function(es, v, r, p) lapply(es, function(e) visit(e, v, roles$ExprList, get_srcref(e, p))),
-    pairlist = function(ls, v, r, p) lapply(ls, function(e) visit(e, v, roles$PairList, get_srcref(e, p))),
+    pairlist = function(ls, v, r, p) NULL,
     atomic = function(a, v, r, p) {
       for (m in all_applicable(a, r)) {
         muts <<- append(muts, list(m |> append(list(srcref = get_srcref(a, p), node_id = get_id(a)))))

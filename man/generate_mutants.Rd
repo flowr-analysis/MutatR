@@ -9,7 +9,8 @@ generate_mutants(
   n,
   filter = function(...) TRUE,
   probabilities = list(),
-  seed = NULL
+  seed = NULL,
+  require_parsable = TRUE
 )
 }
 \arguments{
