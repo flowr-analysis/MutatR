@@ -46,9 +46,6 @@ literal <- list( # nolint: cyclocomp_linter.
       }
       return(muts)
     }
-    if (identical(ast, quote(NULL))) {
-      return(list(list(mut_id = "null:42", fun = function() quote(42))))
-    }
     if (isFALSE(ast)) {
       return(list(list(mut_id = "false:true", fun = function() quote(TRUE))))
     }
