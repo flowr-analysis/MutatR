@@ -16,9 +16,26 @@ appl_fun <- function(f, ...) {
   return(function() as.call(c(as.name(f), args)) |> eval())
 }
 
+function_blacklist <- c("print", "cat", "message", "warning", "stop",
+  "log_trace", "log_debug", "log_info", "log_warn", "log_error", "log_fatal",
+  "logdebug", "loginfo", "logwarn", "logerror", "logfine", "logfiner", "logfinest"
+)
+
+mutate_string <- function(ast, role) {
+  if (!is.character(ast)) {
+    return(FALSE)
+  }
+  parent_function <- attr(role, "fname")
+  return(!isTRUE(parent_function %in% function_blacklist))
+}
+
 literal <- list( # nolint: cyclocomp_linter.
   is_applicable = function(ast, role) {
-    return(is.atomic(ast) && !is.na(ast) && (is.numeric(ast) || is.character(ast) || is.logical(ast) || identical(ast, quote(NULL))))
+    if (!is.atomic(ast) || is.na(ast)) {
+      return(FALSE)
+    }
+    print(mutate_string(ast, role))
+    return(is.numeric(ast) || mutate_string(ast, role) || is.logical(ast))
   },
   get_mutations = function(ast) {
     muts <- list()
