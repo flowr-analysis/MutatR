@@ -226,12 +226,55 @@ is_assignment <- function(name) {
   return(name %in% c("<-", "->", "="))
 }
 
-void_call <- list(
+is_check <- function(name) {
+  is_functions <- c(
+    "is.array", "is.atomic", "is.call", "is.character", "is.complex", "is.data.frame", "is.double", "is.element",
+    "is.empty.model", "is.environment", "is.expression", "is.factor", "is.finite", "is.function", "is.hashtab",
+    "is.infinite", "is.integer", "is.language", "is.leaf", "is.list", "is.loaded", "is.logical", "is.matrix", "is.mts",
+    "is.na", "is.name", "is.nan", "is.null", "is.numeric", "is.object", "is.ordered", "is.package_version",
+    "is.pairlist", "is.primitive", "is.qr", "is.R", "is.raster", "is.raw", "is.recursive", "is.relistable", "is.single",
+    "is.stepfun", "is.symbol", "is.table", "is.ts", "is.tskernel", "is.unsorted", "is.vector",
+    "setequal", "identical",
+    "==", "!=", ">", "<", ">=", "<="
+  )
+  return(name %in% is_functions)
+}
+
+function_replacement <- list(
   is_applicable = function(ast, role) {
-    return(is.call(ast) && role == roles$ExprList && !is_assignment(name_as_string(ast[[1]])))
+    if (!is.call(ast)) {
+      return(FALSE)
+    }
+
+    name <- name_as_string(ast[[1]])
+    remove_void_call <- role == roles$ExprList && !is_assignment(name)
+    is_length <- name == "length"
+    is_check <- is_check(name)
+    return(remove_void_call || is_length || is_check)
   },
   get_mutations = function(ast) {
-    return(list(list(mut_id = "remove", fun = function() remove_me)))
+    name <- name_as_string(ast[[1]])
+    remove_void_call <- !is_assignment(name)
+    is_length <- name == "length"
+    is_check <- is_check(name)
+    muts <- list()
+    if (remove_void_call) {
+      muts <- append(muts, list(list(mut_id = "remove", fun = function() remove_me)))
+    }
+    if (is_length) {
+      muts <- append(muts, list(
+        list(mut_id = "length:0", fun = function() quote(0)),
+        list(mut_id = "length:1", fun = function() quote(1)),
+        list(mut_id = "length:5", fun = function() quote(5))
+      ))
+    }
+    if (is_check) {
+      muts <- append(muts, list(
+        list(mut_id = sprintf("%s:true", name), fun = function() quote(TRUE)),
+        list(mut_id = sprintf("%s:false", name), fun = function() quote(FALSE))
+      ))
+    }
+    return(muts)
   }
 )
 
@@ -326,7 +369,7 @@ mutations <- list(
   "logic" = list(prob = 0.5, mutation = logic),
   "negative condition" = list(prob = 0.5, mutation = negative_condition),
   "swap sign" = list(prob = 0.5, mutation = sign_swap),
-  "void call" = list(prob = 0.5, mutation = void_call),
+  "function replacement" = list(prob = 0.5, mutation = function_replacement),
   "return value" = list(prob = 0.5, mutation = return_value),
   "mutate c" = list(prob = 0.5, mutation = mutate_c),
   "mutate identical" = list(prob = 0.5, mutation = mutate_identical),
