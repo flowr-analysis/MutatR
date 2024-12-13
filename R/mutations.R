@@ -169,7 +169,12 @@ name_mutations <- list(
   "vapply" = c("sapply"),
   "isFALSE" = c("isTRUE"),
   "isTRUE" = c("isFALSE"),
-  "[[" = c("[")
+  "any" = c("all"),
+  "all" = c("any"),
+  "[[" = c("["),
+  "union" = c("intersect", "setdiff"),
+  "intersect" = c("union", "setdiff"),
+  "setdiff" = c("union", "intersect")
 )
 function_name <- list(
   is_applicable = function(ast, role) {
