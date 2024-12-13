@@ -192,7 +192,7 @@ function_name <- list(
 
 branch_condition <- list(
   is_applicable = function(ast, role) {
-    return(role == roles$Cond && !identical(ast, quote(TRUE) && !identical(ast, quote(FALSE))))
+    return(role == roles$Cond && !isTRUE(ast) && !isFALSE(FALSE))
   },
   get_mutations = function(ast) {
     return(list(
