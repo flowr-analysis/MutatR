@@ -34,7 +34,6 @@ literal <- list( # nolint: cyclocomp_linter.
     if (!is.atomic(ast) || is.na(ast)) {
       return(FALSE)
     }
-    print(mutate_string(ast, role))
     return(is.numeric(ast) || mutate_string(ast, role) || is.logical(ast))
   },
   get_mutations = function(ast) {
