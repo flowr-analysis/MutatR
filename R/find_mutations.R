@@ -25,19 +25,26 @@ find_applicable_mutations <- function(ast) {
       f <- parts$name
       as <- parts$args
 
+      fn <- name_as_string(f)
+
       visit(f, v, roles$FunName, srcref)
-      arg_role <- switch(name_as_string(f),
-        "while" = roles$Cond,
-        "if" = roles$Cond,
-        "return" = roles$Ret,
-        "{" = roles$ExprList,
-        {
-          role <- roles$Arg
-          attr(role, "fname") <- name_as_string(f)
-          role
-        }
-      )
-      lapply(as, visit, v, arg_role, srcref)
+
+      default_role <- {
+        role <- roles$Arg
+        attr(role, "fname") <- fn
+        role
+      }
+      lapply(seq_along(as), function(i) {
+        a <- as[[i]]
+        role <- switch(fn,
+          "while" = if (i == 1) roles$Cond else roles$ExprList,
+          "if" = if (i == 1) roles$Cond else roles$ExprList,
+          "return" = roles$Ret,
+          "{" = roles$ExprList,
+          default_role
+        )
+        visit(a, v, role, srcref)
+      })
     }
   )
 
