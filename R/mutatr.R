@@ -57,6 +57,10 @@ generate_mutants <- function(
   mutants <- list()
   for (file in names(asts)) {
     print(file)
+
+    mutant_hashes <- list(rlang::hash_file(file))
+    mutants_per_file <- list()
+
     applicable_per_file <- find_applicable_mutations(asts[[file]])
     print(length(applicable_per_file))
     for (mutation in applicable_per_file) {
@@ -78,6 +82,11 @@ generate_mutants <- function(
         } else {
           code <- deparse(mutant, control = NULL)
         }
+
+        hash <- rlang::hash(code)
+        if (hash %in% mutant_hashes) next
+        mutant_hashes <- c(mutant_hashes, hash)
+
         tryCatch(parse(text = code), error = function(e) {
           print(e)
           does_parse <<- FALSE
@@ -85,9 +94,11 @@ generate_mutants <- function(
         if (!does_parse) next
       }
 
-      mutants <- append(mutants, list(append(mutation, list(mutant = mutant))))
+      mutants_per_file <- append(mutants_per_file, list(append(mutation, list(mutant = mutant))))
     }
     gc()
+    print(length(mutants_per_file))
+    mutants <- c(mutants, mutants_per_file)
   }
 
   if (length(mutants) < n) {
