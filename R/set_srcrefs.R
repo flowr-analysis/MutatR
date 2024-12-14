@@ -85,12 +85,12 @@ cal <- function(cl, v, pd, srcfile, parent_srcref) {
     "(" = {
       list(pd$children[[2]][[1]])
     },
-    "$" = ,
-    "[[" = {
+    "$" = {
       lhs <- pd$children[[1]][[1]]
       rhs <- pd$children[[3]][[1]]
       list(lhs, rhs)
     },
+    "[[" = lapply(seq(from = 1, by = 2, length.out = length(as)), function(i) pd$children[[i]][[1]]),
     {
       if (name_as_string(f) %in% ops && length(as) == 2) {
         list(pd$children[[1]][[1]], pd$children[[3]][[1]])
