@@ -37,23 +37,20 @@ copy_attribs <- function(dest, src, filter = c("node_id")) {
 #' @param asts The abstract syntax trees to generate mutations for. Must be a named
 #' lists with the name being the file path and the value being the abstract syntax tree.
 #' @param n The number of mutations to generate.
-#' @param filter A function that takes the mutation name, the source reference and the
-#' file path and returns a boolean indicating whether the mutation can be applied.
 #' @param probabilities A named list of probabilities for each mutation. If a mutation
 #' is not in the list, the default probability is used.
 #' @param seed The seed that determines what mutations are selected. If NULL, a random
 #' seed is used.
 #'
-#' @return A list of n mutated abstract syntax trees with the applied mutation
+#' @return A list of n mutants and the used seed
 #'
 #' @export
 generate_mutants <- function(
     asts, n,
-    filter = function(...) TRUE,
     probabilities = list(),
     seed = NULL,
     require_parsable = TRUE) {
-  set.seed(seed) # TODO: return seed
+  set.seed(seed)
   mutants <- list()
   for (file in names(asts)) {
     print(file)
@@ -64,9 +61,6 @@ generate_mutants <- function(
     applicable_per_file <- find_applicable_mutations(asts[[file]])
     print(length(applicable_per_file))
     for (mutation in applicable_per_file) {
-      p <- filter(mutation$cat, mutation$srcref, file)
-      if (isFALSE(p)) next
-
       can_apply <- TRUE
       tryCatch(mutant <- apply_mutation(asts[[file]], mutation), error = function(e) {
         cat("Could not apply\n")
@@ -96,7 +90,6 @@ generate_mutants <- function(
 
       mutants_per_file <- append(mutants_per_file, list(append(mutation, list(mutant = mutant))))
     }
-    gc()
     print(length(mutants_per_file))
     mutants <- c(mutants, mutants_per_file)
   }
