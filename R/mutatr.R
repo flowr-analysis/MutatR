@@ -32,6 +32,24 @@ copy_attribs <- function(dest, src, filter = c("node_id")) {
   return(dest)
 }
 
+setup_ast <- function(files) {
+  considered_exprs <- 0
+  unconsidered_exprs <- 0
+
+  asts <- files |>
+    lapply(parse, keep.source = TRUE) |>
+    stats::setNames(files) |>
+    # lapply(standardize_calls) |> # does not work if we don't source the file into an environment
+    lapply(function(ast) {
+      ast <- add_srcrefs(ast)
+      considered_exprs <<- considered_exprs + ast$considered_exprs
+      unconsidered_exprs <<- unconsidered_exprs + ast$unconsidered_exprs
+      return(ast$ast)
+    }) |>
+    lapply(set_ids)
+  return(list(asts = asts, considered_exprs = considered_exprs, unconsidered_exprs = unconsidered_exprs))
+}
+
 #' Generate n mutations for the given abstract syntax tree.
 #'
 #' @param asts The abstract syntax trees to generate mutations for. Must be a named
@@ -41,104 +59,106 @@ copy_attribs <- function(dest, src, filter = c("node_id")) {
 #' is not in the list, the default probability is used.
 #' @param seed The seed that determines what mutations are selected. If NULL, a random
 #' seed is used.
+#' @param filter A function that filters out mutations that should not be applied.
 #'
 #' @return A list of n mutants and the used seed
 #'
 #' @export
 generate_mutants <- function(
-    asts, n,
+    files, n,
     probabilities = list(),
     seed = NULL,
-    require_parsable = TRUE) {
-  set.seed(seed)
-  mutants <- list()
-  for (file in names(asts)) {
-    print(file)
+    filters = list(file = function(f) TRUE, srcref = function(s) TRUE)) {
+  asts <- setup_ast(files)
 
+  considered_exprs <- asts$considered_exprs
+  unconsidered_exprs <- asts$unconsidered_exprs
+  asts <- asts$asts
+
+  could_not_apply_counter <- 0
+  could_not_parse_counter <- 0
+  identical_counter <- 0
+
+  set.seed(seed)
+
+  mutants <- list()
+  for (file in Filter(filters$file, names(asts))) {
     mutant_hashes <- list(rlang::hash_file(file))
     mutants_per_file <- list()
 
-    applicable_per_file <- find_applicable_mutations(asts[[file]])
-    print(length(applicable_per_file))
+    applicable_per_file <- find_applicable_mutations(asts[[file]], function(s) filters$srcref(file, s))
     for (mutation in applicable_per_file) {
       can_apply <- TRUE
       tryCatch(mutant <- apply_mutation(asts[[file]], mutation), error = function(e) {
-        cat("Could not apply\n")
-        print(e)
+        could_not_apply_counter <<- could_not_apply_counter + 1
         can_apply <<- FALSE
       })
       if (!can_apply) next
 
-      if (require_parsable) {
-        does_parse <- TRUE
-        if (is.expression(mutant)) {
-          code <- lapply(mutant, deparse, control = NULL) |> paste(collapse = "\n")
-        } else {
-          code <- deparse(mutant, control = NULL)
-        }
-
-        hash <- rlang::hash(code)
-        if (hash %in% mutant_hashes) next
-        mutant_hashes <- c(mutant_hashes, hash)
-
-        tryCatch(parse(text = code), error = function(e) {
-          print(e)
-          does_parse <<- FALSE
-        })
-        if (!does_parse) next
+      does_parse <- TRUE
+      if (is.expression(mutant)) {
+        code <- lapply(mutant, deparse, control = NULL) |> paste(collapse = "\n")
+      } else {
+        code <- deparse(mutant, control = NULL)
       }
 
-      mutants_per_file <- append(mutants_per_file, list(append(mutation, list(mutant = mutant))))
+      hash <- rlang::hash(code)
+      if (hash %in% mutant_hashes) {
+        identical_counter <- identical_counter + 1
+        next
+      }
+      mutant_hashes <- c(mutant_hashes, hash)
+
+      tryCatch(parse(text = code), error = function(e) {
+        does_parse <<- FALSE
+        could_not_parse_counter <<- could_not_parse_counter + 1
+      })
+      if (!does_parse) next
+
+      mutants_per_file <- append(mutants_per_file, list(append(mutation, list(mutant = mutant, file = file))))
     }
-    print(length(mutants_per_file))
     mutants <- c(mutants, mutants_per_file)
   }
 
-  if (length(mutants) < n) {
-    cat("Only", length(mutants), "mutations found. Requested", n, "mutations.\n")
-    n <- length(mutants)
-  } else {
-    cat("Found", length(mutants), "mutations.\n")
+  if (length(mutants) < n) n <- length(mutants)
+
+  if (n == 0) {
+    return(list())
   }
 
   mutants <- sample(mutants, n, prob = build_probs(mutants, probabilities))
 
-  return(mutants)
+  return(list(
+    mutants = mutants,
+    considered_exprs = considered_exprs,
+    unconsidered_exprs = unconsidered_exprs,
+    could_not_apply = could_not_apply_counter,
+    could_not_parse = could_not_parse_counter
+  ))
 }
 
-test <- function() {
-  # nolint start
-  # files <- c(
-  #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/askpass.R",
-  #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/interactive.R",
-  #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/onload.R",
-  #   "/home/luke/src/cran-packages-coverage/pkgs/askpass/R/ssh.R"
-  # )
-  # nolint end
-  files <- c(
-    "/home/luke/src/master-thesis/mutatR/example.R" # nolint
-  )
-  asts <- files |>
-    lapply(parse, keep.source = TRUE) |>
-    stats::setNames(files) |>
-    # lapply(standardize_calls) |> # does not work if we don't source the file into an environment
-    lapply(add_srcrefs) |>
-    lapply(set_ids)
-  mutants <- generate_mutants(asts, 1000)
-  for (mutant in mutants) {
-    if (is.expression(mutant$mutant)) {
-      code <- lapply(mutant$mutant, deparse, control = NULL) |> paste(collapse = "\n")
-    } else {
-      code <- deparse(mutant, control = NULL)
-    }
-    cat(code, "\n\n")
-  }
-}
-
-test2 <- function(pkg) {
-  src_path <- file.path(pkg, "R")
-  files <- list.files(src_path, recursive = TRUE, full.names = TRUE, pattern = "\\.R$")
-  asts <- lapply(files, parse, keep.source = TRUE) |> stats::setNames(files)
-  asts <- lapply(asts, add_srcrefs)
-  invisible(generate_mutants(asts, 1000))
-}
+# test <- function() {
+#   files <- list()
+#   # for (pkg in c("arrow")) {
+#   #   src <- file.path("/home/luke/src/cran-packages-coverage/pkgs", pkg, "R") # nolint: nonportable_path_linter.
+#   #   fs <- list.files(src, recursive = TRUE, full.names = TRUE, pattern = "\\.(r|R)$")
+#   #   files <- c(files, fs)
+#   # }
+#   files <- list("/home/luke/src/master-thesis/mutatR/example.R") # nolint
+#
+#   asts <- files |>
+#     lapply(parse, keep.source = TRUE) |>
+#     stats::setNames(files) |>
+#     # lapply(standardize_calls) |> # does not work if we don't source the file into an environment
+#     lapply(add_srcrefs) |>
+#     lapply(set_ids)
+#   mutants <- generate_mutants(asts, 1000)
+#   for (mutant in mutants) {
+#     if (is.expression(mutant$mutant)) {
+#       code <- lapply(mutant$mutant, deparse, control = NULL) |> paste(collapse = "\n")
+#     } else {
+#       code <- deparse(mutant, control = NULL)
+#     }
+#     # cat(code, "\n\n")
+#   }
+# }

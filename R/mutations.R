@@ -40,32 +40,35 @@ literal <- list( # nolint: cyclocomp_linter.
     muts <- list()
     if (is.numeric(ast)) {
       for (inc in c(-1, 1, NA)) {
-        id <- sprintf("%f:%d", as.numeric(ast), inc)
-        muts <- append(muts, list(list(mut_id = id, fun = appl_fun("+", ast, inc))))
+        id <- sprintf("%d", inc)
+        muts <- append(muts, list(list(subcat = "numeric", mut_id = id, fun = appl_fun("+", ast, inc))))
       }
       return(muts)
     }
     if (isFALSE(ast)) {
-      return(list(list(mut_id = "false:true", fun = function() quote(TRUE))))
+      return(list(list(subcat = "false", mut_id = "true", fun = function() quote(TRUE))))
     }
     if (isTRUE(ast)) {
-      return(list(list(mut_id = "true:false", fun = function() quote(FALSE))))
+      return(list(list(subcat = "true", mut_id = "false", fun = function() quote(FALSE))))
     }
     if (is.character(ast)) {
       if (nchar(ast) == 0) {
-        return(list(list(mut_id = "add", fun = function() quote("mutatr string"))))
+        return(list(list(subcat = "string", mut_id = "add", fun = function() quote("mutatr string"))))
       }
 
       muts <- (list(list(
+        subcat = "string",
         mut_id = "remove",
         fun = function() substring(ast, 2)
       ), list(
+        subcat = "string",
         mut_id = "add",
         fun = function() paste(ast, "mutated")
       )))
 
       if (nchar(ast) > 1) {
         muts <- append(muts, list(list(
+          subcat = "string",
           mut_id = "empty",
           fun = function() quote("")
         )))
@@ -90,8 +93,8 @@ logic <- list(
     muts <- list()
     name <- ast[[1]] |> as.character()
     for (to in logic_mutations[[name]]) {
-      id <- sprintf("%s:%s", name, to)
-      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+      id <- sprintf("%s", to)
+      muts <- append(muts, list(list(subcat = name, mut_id = id, fun = rename_op(ast, to))))
     }
     return(muts)
   }
@@ -113,8 +116,8 @@ negative_condition <- list(
     muts <- list()
     name <- ast[[1]] |> as.character()
     for (to in negativ_cond_mutations[[name]]) {
-      id <- sprintf("%s:%s", name, to)
-      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+      id <- sprintf("%s", to)
+      muts <- append(muts, list(list(subcat = name, mut_id = id, fun = rename_op(ast, to))))
     }
     return(muts)
   }
@@ -134,8 +137,8 @@ condition_boundary <- list(
     muts <- list()
     name <- ast[[1]] |> as.character()
     for (to in cond_boundary_mutations[[name]]) {
-      id <- sprintf("%s:%s", name, to)
-      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+      id <- sprintf("%s", to)
+      muts <- append(muts, list(list(subcat = name, mut_id = id, fun = rename_op(ast, to))))
     }
     return(muts)
   }
@@ -155,8 +158,8 @@ arithmetic <- list(
     muts <- list()
     name <- ast[[1]] |> as.character()
     for (to in arithmetic_mutations[[name]]) {
-      id <- sprintf("%s:%s", name, to)
-      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+      id <- sprintf("%s", to)
+      muts <- append(muts, list(list(subcat = name, mut_id = id, fun = rename_op(ast, to))))
     }
     return(muts)
   }
@@ -183,8 +186,8 @@ function_name <- list(
     muts <- list()
     name <- ast |> as.character()
     for (to in name_mutations[[name]]) {
-      id <- sprintf("%s:%s", name, to)
-      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+      id <- sprintf("%s", to)
+      muts <- append(muts, list(list(subcat = name, mut_id = id, fun = rename_op(ast, to))))
     }
     return(muts)
   }
@@ -196,8 +199,8 @@ branch_condition <- list(
   },
   get_mutations = function(ast) {
     return(list(
-      list(mut_id = "true", fun = function() quote(TRUE)),
-      list(mut_id = "false", fun = function() quote(FALSE))
+      list(subcat = "true", mut_id = "true", fun = function() quote(TRUE)),
+      list(subcat = "false", mut_id = "false", fun = function() quote(FALSE))
     ))
   }
 )
@@ -214,8 +217,8 @@ sign_swap <- list(
     muts <- list()
     name <- ast[[1]] |> as.character()
     for (to in unary_oper_mutations[[name]]) {
-      id <- sprintf("%s:%s", name, to)
-      muts <- append(muts, list(list(mut_id = id, fun = rename_op(ast, to))))
+      id <- sprintf("%s", to)
+      muts <- append(muts, list(list(subcat = name, mut_id = id, fun = rename_op(ast, to))))
     }
     return(muts)
   }
@@ -258,19 +261,19 @@ function_replacement <- list(
     is_check <- is_check(name)
     muts <- list()
     if (remove_void_call) {
-      muts <- append(muts, list(list(mut_id = "remove", fun = function() remove_me)))
+      muts <- append(muts, list(list(subcat = "remove", mut_id = name, fun = function() remove_me)))
     }
     if (is_length) {
       muts <- append(muts, list(
-        list(mut_id = "length:0", fun = function() quote(0)),
-        list(mut_id = "length:1", fun = function() quote(1)),
-        list(mut_id = "length:5", fun = function() quote(5))
+        list(subcat = "length", mut_id = "0", fun = function() quote(0)),
+        list(subcat = "length", mut_id = "1", fun = function() quote(1)),
+        list(subcat = "length", mut_id = "5", fun = function() quote(5))
       ))
     }
     if (is_check) {
       muts <- append(muts, list(
-        list(mut_id = sprintf("%s:true", name), fun = function() quote(TRUE)),
-        list(mut_id = sprintf("%s:false", name), fun = function() quote(FALSE))
+        list(subcat = name, mut_id = "true", fun = function() quote(TRUE)),
+        list(subcat = name, mut_id = "false", fun = function() quote(FALSE))
       ))
     }
     return(muts)
@@ -283,9 +286,9 @@ return_value <- list(
   },
   get_mutations = function(ast) {
     if (identical(ast, quote(NULL))) {
-      return(list(list(mut_id = "nonnull", fun = function() quote(42))))
+      return(list(list(subcat = "null", mut_id = "nonnull", fun = function() quote(42))))
     }
-    return(list(list(mut_id = "null", fun = function() quote(NULL))))
+    return(list(list(subcat = "nonnull", mut_id = "null", fun = function() quote(NULL))))
   }
 )
 
@@ -295,15 +298,15 @@ mutate_c <- list(
   },
   get_mutations = function(ast) {
     if (length(ast) - 1 == 0) { # no arguments provided
-      return(list(list(mut_id = "add", fun = function() quote(42))))
+      return(list(list(subcat = "add", mut_id = "add", fun = function() quote(42))))
     }
     muts <- list(
-      list(mut_id = "remove", fun = function() {
+      list(subcat = "remove", mut_id = "remove", fun = function() {
         as <- as.list(ast[-1])
         as <- as[-sample(seq_along(as), 1)]
         return(as.call(c(ast[[1]], as)))
       }),
-      list(mut_id = "add", fun = function() {
+      list(subcat = "add", mut_id = "add", fun = function() {
         as <- as.list(ast[-1])
         as <- c(as, quote(41))
         return(as.call(c(ast[[1]], as)))
@@ -312,7 +315,7 @@ mutate_c <- list(
 
     if (length(ast[-1]) > 1) {
       muts <- append(muts, list(
-        list(mut_id = "empty", fun = function() {
+        list(subcat = "mempty", mut_id = "empty", fun = function() {
           as <- list()
           return(as.call(c(ast[[1]], as)))
         })
@@ -330,13 +333,13 @@ mutate_identical <- list(
   get_mutations = function(ast) {
     name <- ast[[1]]
     if (name == "identical") {
-      return(list(list(mut_id = "identical:==", fun = function() {
+      return(list(list(subcat = "identical", mut_id = "==", fun = function() {
         as <- head(as.list(ast[-1]), 2)
         return(as.call(c(as.name("=="), as)))
       })))
     }
     if (name == "==") {
-      return(list(list(mut_id = "==:identical", fun = function() {
+      return(list(list(subcat = "==", mut_id = "identical", fun = function() {
         as <- as.list(ast[-1])
         return(as.call(c(as.name("identical"), as)))
       })))
@@ -351,19 +354,19 @@ create_call <- list(
   get_mutations = function(ast) {
     if (is.expression(ast)) {
       as <- as.list(ast)
-      return(list(list(mut_id = "add warning", fun = function() {
+      return(list(list(subcat = "warning", mut_id = "add warning", fun = function() {
         as <- c(as, quote(warning("warning created by mutatr")))
         return(as.expression(as))
-      }), list(mut_id = "add error", fun = function() {
+      }), list(subcat = "error", mut_id = "add error", fun = function() {
         as <- c(as, quote(stop("error created by mutatr")))
         return(as.expression(as))
       })))
     } else if (is.call(ast)) {
       as <- as.list(ast[-1])
-      return(list(list(mut_id = "add warning", fun = function() {
+      return(list(list(subcat = "warning", mut_id = "add warning", fun = function() {
         as <- c(as, quote(warning("warning created by mutatr")))
         return(as.call(c(ast[[1]], as)))
-      }), list(mut_id = "add error", fun = function() {
+      }), list(subcat = "error", mut_id = "add error", fun = function() {
         as <- c(as, quote(stop("error created by mutatr")))
         return(as.call(c(ast[[1]], as)))
       })))

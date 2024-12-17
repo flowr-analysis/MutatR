@@ -5,17 +5,14 @@
 \title{Generate n mutations for the given abstract syntax tree.}
 \usage{
 generate_mutants(
-  asts,
+  files,
   n,
   probabilities = list(),
   seed = NULL,
-  require_parsable = TRUE
+  filters = list(file = function(f) TRUE, srcref = function(s) TRUE)
 )
 }
 \arguments{
-\item{asts}{The abstract syntax trees to generate mutations for. Must be a named
-lists with the name being the file path and the value being the abstract syntax tree.}
-
 \item{n}{The number of mutations to generate.}
 
 \item{probabilities}{A named list of probabilities for each mutation. If a mutation
@@ -23,6 +20,11 @@ is not in the list, the default probability is used.}
 
 \item{seed}{The seed that determines what mutations are selected. If NULL, a random
 seed is used.}
+
+\item{asts}{The abstract syntax trees to generate mutations for. Must be a named
+lists with the name being the file path and the value being the abstract syntax tree.}
+
+\item{filter}{A function that filters out mutations that should not be applied.}
 }
 \value{
 A list of n mutants and the used seed

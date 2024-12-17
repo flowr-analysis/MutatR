@@ -134,29 +134,36 @@ has_semicolon <- function(pd) {
 }
 
 add_srcrefs <- function(ast) {
+  unconsidered_exprs <- 0
+  considered_exprs <- 0
   pd <- utils::getParseData(ast) |> make_pd_hirarchy()
   visitor <- list(
     exprlist = function(es, v, pd, srcfile, parent_srcref) {
       srcfile <- attr(es, "srcfile")
-      srcrefs <- utils::getSrcref(es)
+      child_srcrefs <- utils::getSrcref(es)
+      srcref <- srcref(srcfile, c(1, 1, 2, 2)) # merge srcref of first and last element
       lapply(seq_along(es), function(i) {
         e <- es[[i]]
         pd <- pd[[i]]
         if (has_semicolon(pd)) { # When a semicolon is present, we have a hard time interpreting the parse data
           print("Ignored expression because of a semicolon")
+          unconsidered_exprs <<- unconsidered_exprs + 1
           return(e)
+        } else {
+          considered_exprs <<- considered_exprs + 1
         }
-        # cat("No semicolon")
-        srcref <- srcrefs[[i]]
+        srcref <- child_srcrefs[[i]]
         visit(e, v, pd, srcfile, srcref) # not really the parent srcref but whatever
       }) |>
         as.expression() |>
-        copy_attribs(es)
+        copy_attribs(es) |>
+        set_srcref(srcref)
     },
     pairlist = function(l, v, pd, srcfile, parent_srcref) set_srcref_alt(l, pd$elem, srcfile, parent_srcref),
     atomic = function(a, v, pd, srcfile, parent_srcref) set_srcref_alt(a, pd$elem, srcfile, parent_srcref),
     name = function(n, v, pd, srcfile, parent_srcref) set_srcref_alt(n, pd$elem, srcfile, parent_srcref),
     call = cal
   )
-  visit(ast, visitor, pd, NULL, NULL)
+  ast <- visit(ast, visitor, pd, NULL, NULL)
+  return(list(ast = ast, unconsidered_exprs = unconsidered_exprs, considered_exprs = considered_exprs))
 }

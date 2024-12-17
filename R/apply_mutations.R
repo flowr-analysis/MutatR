@@ -18,8 +18,6 @@ apply_on_list <- function(l, v) {
 }
 
 apply_mutation <- function(ast, mutation) {
-  srcref <- mutation$srcref
-  cat("Applying", mutation$cat, "at position", srcref, "with node id", mutation$node_id, "\n")
   visitor <- list(
     exprlist = function(es, v, ...) {
       if (compare_identifier(es, mutation)) {
@@ -59,7 +57,7 @@ apply_mutation <- function(ast, mutation) {
 
       new_args <- apply_on_list(as, v)
       if (f == "function") {
-        if (length(new_args$ast) > 2) print("huh what")
+        # if (length(new_args$ast) > 2) print("huh what")
         args <- if (length(a <- new_args$ast) == 2) a[[1]] else list()
         body <- new_args$ast[[length(new_args$ast)]]
         new_call <- rlang::new_function(args, body)
