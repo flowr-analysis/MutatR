@@ -137,28 +137,25 @@ generate_mutants <- function(
   ))
 }
 
-# test <- function() {
-#   files <- list()
-#   # for (pkg in c("arrow")) {
-#   #   src <- file.path("/home/luke/src/cran-packages-coverage/pkgs", pkg, "R") # nolint: nonportable_path_linter.
-#   #   fs <- list.files(src, recursive = TRUE, full.names = TRUE, pattern = "\\.(r|R)$")
-#   #   files <- c(files, fs)
-#   # }
-#   files <- list("/home/luke/src/master-thesis/mutatR/example.R") # nolint
-#
-#   asts <- files |>
-#     lapply(parse, keep.source = TRUE) |>
-#     stats::setNames(files) |>
-#     # lapply(standardize_calls) |> # does not work if we don't source the file into an environment
-#     lapply(add_srcrefs) |>
-#     lapply(set_ids)
-#   mutants <- generate_mutants(asts, 1000)
-#   for (mutant in mutants) {
-#     if (is.expression(mutant$mutant)) {
-#       code <- lapply(mutant$mutant, deparse, control = NULL) |> paste(collapse = "\n")
-#     } else {
-#       code <- deparse(mutant, control = NULL)
-#     }
-#     # cat(code, "\n\n")
-#   }
-# }
+# nolint start.
+test <- function() {
+  files <- list()
+  for (pkg in c("vroom")) {
+    src <- file.path("/home/luke/src/cran-packages-coverage/pkgs", pkg, "R")
+    fs <- list.files(src, recursive = TRUE, full.names = TRUE, pattern = "\\.(r|R)$")
+    files <- c(files, fs)
+  }
+  # files <- list("/home/luke/src/master-thesis/mutatR/example.R")
+
+  mutants <- generate_mutants(files, 1000)
+  print(mutants)
+  # for (mutant in mutants) {
+  #   if (is.expression(mutant$mutant)) {
+  #     code <- lapply(mutant$mutant, deparse, control = NULL) |> paste(collapse = "\n")
+  #   } else {
+  #     code <- deparse(mutant, control = NULL)
+  #   }
+  #   cat(code, "\n\n")
+  # }
+}
+# nolint end.
