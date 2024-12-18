@@ -49,7 +49,7 @@ make_pd_hirarchy <- function(pd, root_ids = pd[pd$parent == 0, ]$id) {
 }
 
 parse_srcrefs_from_args <- function(arg_pds, target_length, srcfile, parent) { # nolint: cyclocomp_linter.
-  if (arg_pds[[2]]$elem$text != "(" || arg_pds[[length(arg_pds)]]$elem$text != ")") {
+  if (length(arg_pds) < 2 || arg_pds[[2]]$elem$text != "(" || arg_pds[[length(arg_pds)]]$elem$text != ")") {
     return(rep(list(NULL), target_length))
   }
   if (length(arg_pds) <= 3) { # no arguments
