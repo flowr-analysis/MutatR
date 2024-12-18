@@ -82,7 +82,7 @@ parse_srcrefs_from_args <- function(arg_pds, target_length, srcfile, parent) {
 
 ops <- c(
   "~", "+", "-", "*", "/", "^", "**", "%%", "%/%", "%*%", "%o%", "%x%", "==", "!=", ">", ">=", "<", "<=", "&",
-  "&&", "|", "||", "!", "%in%", "<-", ":=", "<<-", "->", "->>", "=", ":", "?", "::", ":::", "%||%"
+  "&&", "|", "||", "!", "%in%", "<-", ":=", "<<-", "->", "->>", "=", ":", "?", "::", ":::", "%||%", "$"
 )
 
 cal <- function(cl, v, pd, srcfile, parent_srcref) {
@@ -120,12 +120,21 @@ cal <- function(cl, v, pd, srcfile, parent_srcref) {
     "(" = {
       list(pd$children[[2]])
     },
-    "$" = {
-      lhs <- pd$children[[1]]
-      rhs <- pd$children[[3]]
-      list(lhs, rhs)
+    "[[" = ,
+    "[" = {
+      pd_i <- 1
+      pd_args <- list()
+      for (i in seq_along(as)) {
+        if (rlang::is_missing(as[[i]])) {
+          pd_args <- append(pd_args, list(NULL))
+          pd_i <- pd_i + 1
+        } else {
+          pd_args <- c(pd_args, list(pd$children[[pd_i]]))
+          pd_i <- pd_i + 2
+        }
+      }
+      pd_args
     },
-    "[[" = lapply(seq(from = 1, by = 2, length.out = length(as)), function(i) pd$children[[i]]),
     {
       if (name_as_string(f) %in% ops && length(as) == 2) {
         list(pd$children[[1]], pd$children[[3]])
