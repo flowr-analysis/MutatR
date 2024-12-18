@@ -68,7 +68,7 @@ generate_mutants <- function(
     files, n,
     probabilities = list(),
     seed = NULL,
-    filters = list(file = function(f) TRUE, srcref = function(s) TRUE)) {
+    filters = list(file = function(f) TRUE, srcref = function(f, s) TRUE)) {
   asts <- setup_ast(files)
 
   considered_exprs <- asts$considered_exprs
