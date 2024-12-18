@@ -41,6 +41,7 @@ We currently support the following mutations (in no particular order):
     - Numeric literals are replaced by `NA` or in- or decremented by 1
     - Logical literals are replaced by their negation
     - Character literals are modified by appending to the end, removing the first character, or by replacing it with an empty string
+        - This is only done when the string does not appear inside typical logging functions, like `print`, `cat`, `message`, or `log_trace`
 - Logic operator replacement:
     | Original | Mutation |
     |----------|----------|
