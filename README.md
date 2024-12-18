@@ -22,16 +22,21 @@ We currently support the following mutations (in no particular order):
     | `<`      | `<=`     |
     | `<=`     | `<`      |
 - Function name replacement:
-    | Original    | Mutation 1  | Mutation 2 |
-    |-------------|-------------|------------|
-    | `lapply`    | `sapply`    | `vapply`   |
-    | `sapply`    | `lapply`    |            |
-    | `vapply`    | `sapply`    |            |
-    | `isTRUE`    | `isFALSE`   |            |
-    | `isFALSE`   | `isTRUE`    |            |
-    | `[[`        | `[`         |            |
-    | `==`        | `identical` |            |
-    | `identical` | `==`        |            |
+    | Original    | Mutation 1  | Mutation 2  |
+    |-------------|-------------|-------------|
+    | `lapply`    | `sapply`    | `vapply`    |
+    | `sapply`    | `lapply`    |             |
+    | `vapply`    | `sapply`    |             |
+    | `isTRUE`    | `isFALSE`   |             |
+    | `isFALSE`   | `isTRUE`    |             |
+    | `[[`        | `[`         |             |
+    | `any`       | `all`       |             |
+    | `all`       | `any`       |             |
+    | `==`        | `identical` |             |
+    | `identical` | `==`        |             |
+    | `union`     | `intersect` | `setdiff`   |
+    | `intersect` | `union`     | `setdiff`   |
+    | `setdiff`   | `union`     | `intersect` |
 - Literal mutation:
     - Numeric literals are replaced by `NA` or in- or decremented by 1
     - Logical literals are replaced by their negation
@@ -57,8 +62,10 @@ We currently support the following mutations (in no particular order):
     |----------|----------|
     | `+`      | `-`      |
     | `-`      | `+`      |
-- Call removal:
+- Function replacement
     - Calls whose result is not assigned by `<-`, `<<-`, `->`, `->>`, or `=` are removed
+    - Calls to `length` are replaced by `0`, `1`, and `5`
+    - "is"-checkes (`is.character`, `is.logical`, ... , and relation operators) are replaced by `TRUE` and `FALSE`
 - Return value replacement:
     | Original        | Mutation |
     |-----------------|----------|
