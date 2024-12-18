@@ -52,14 +52,15 @@ setup_ast <- function(files) {
 
 #' Generate n mutations for the given abstract syntax tree.
 #'
-#' @param asts The abstract syntax trees to generate mutations for. Must be a named
-#' lists with the name being the file path and the value being the abstract syntax tree.
+#' @param files Set of files to generate mutations for.
 #' @param n The number of mutations to generate.
 #' @param probabilities A named list of probabilities for each mutation. If a mutation
 #' is not in the list, the default probability is used.
 #' @param seed The seed that determines what mutations are selected. If NULL, a random
 #' seed is used.
-#' @param filter A function that filters out mutations that should not be applied.
+#' @param filters A list of two filters. `filters$file` takes a file name and returns whether
+#' the package should consider this file. `filters$srcref` takes a file and a srcref and returns
+#' whether a mutations should be applied at this location.
 #'
 #' @return A list of n mutants and the used seed
 #'
