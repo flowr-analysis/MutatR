@@ -14,12 +14,6 @@ get_srcref <- function(ast, parent = NULL) {
   return(srcref)
 }
 
-compare_identifier <- function(elem, mut) {
-  is_id <- get_id(elem)
-  target_id <- mut$node_id
-  return(is_id == target_id)
-}
-
 copy_attribs <- function(dest, src, filter = c("node_id")) {
   filter <- c(filter, names(attributes(dest))) |> unique()
 
@@ -69,7 +63,7 @@ generate_mutants <- function(
     files, n,
     probabilities = list(),
     seed = NULL,
-    filters = list(file = function(f) TRUE, srcref = function(f, s) TRUE)) {
+    filters = list(file = function(f) TRUE, srcref = function(f, s, id) TRUE)) {
   asts <- setup_ast(files)
 
   considered_exprs <- asts$considered_exprs
@@ -87,7 +81,7 @@ generate_mutants <- function(
     mutant_hashes <- list(rlang::hash_file(file))
     mutants_per_file <- list()
 
-    applicable_per_file <- find_applicable_mutations(asts[[file]], function(s) filters$srcref(file, s))
+    applicable_per_file <- find_applicable_mutations(asts[[file]], function(s, id) filters$srcref(file, s, id))
     for (mutation in applicable_per_file) {
       can_apply <- TRUE
       tryCatch(mutant <- apply_mutation(asts[[file]], mutation), error = function(e) {
@@ -98,9 +92,9 @@ generate_mutants <- function(
 
       does_parse <- TRUE
       if (is.expression(mutant)) {
-        code <- lapply(mutant, deparse, control = NULL) |> paste(collapse = "\n")
+        code <- lapply(mutant, deparse, control = NULL)
       } else {
-        code <- deparse(mutant, control = NULL)
+        code <- deparse(mutant, control = NULL) |> list()
       }
 
       hash <- rlang::hash(code)
@@ -110,7 +104,9 @@ generate_mutants <- function(
       }
       mutant_hashes <- c(mutant_hashes, hash)
 
-      tryCatch(parse(text = code), error = function(e) {
+      tmp_file <- tempfile(fileext = ".R")
+      for (line in code) write(line, file = tmp_file, append = TRUE, sep = " ")
+      tryCatch(parse(file = tmp_file), error = function(e) {
         does_parse <<- FALSE
         could_not_parse_counter <<- could_not_parse_counter + 1
       })
@@ -124,7 +120,13 @@ generate_mutants <- function(
   if (length(mutants) < n) n <- length(mutants)
 
   if (n == 0) {
-    return(list())
+    return(list(
+      mutants = list(),
+      considered_exprs = considered_exprs,
+      unconsidered_exprs = unconsidered_exprs,
+      could_not_apply = could_not_apply_counter,
+      could_not_parse = could_not_parse_counter
+    ))
   }
 
   mutants <- sample(mutants, n, prob = build_probs(mutants, probabilities))
@@ -141,7 +143,7 @@ generate_mutants <- function(
 # nolint start.
 test <- function() {
   files <- list()
-  for (pkg in c("vroom")) {
+  for (pkg in c("doBy")) {
     src <- file.path("/home/luke/src/cran-packages-coverage/pkgs", pkg, "R")
     fs <- list.files(src, recursive = TRUE, full.names = TRUE, pattern = "\\.(r|R)$")
     files <- c(files, fs)

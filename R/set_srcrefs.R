@@ -137,9 +137,9 @@ cal <- function(cl, v, pd, srcfile, parent_srcref) {
       pd_args
     },
     {
-      if (name_as_string(f) %in% ops && length(as) == 2) {
+      if (name_as_string(f) %in% ops && length(as) == 2 && length(pd$children) >= 3) {
         list(pd$children[[1]], pd$children[[3]])
-      } else if (name_as_string(f) %in% ops && length(as) == 1) {
+      } else if (name_as_string(f) %in% ops && length(as) == 1 && length(pd$children) >= 2) {
         list(pd$children[[2]])
       } else {
         parse_srcrefs_from_args(pd$children, length(as))
