@@ -9,7 +9,7 @@ generate_mutants(
   n,
   probabilities = list(),
   seed = NULL,
-  filters = list(file = function(f) TRUE, srcref = function(f, s) TRUE)
+  filters = list(file = function(f) TRUE, srcref = function(f, s, id) TRUE)
 )
 }
 \arguments{
