@@ -59,7 +59,7 @@ setup_ast <- function(files) {
 #' @return A list of n mutants and the used seed
 #'
 #' @export
-generate_mutants <- function(
+generate_mutants <- function( # nolint: cyclocomp_linter.
     files, n,
     probabilities = list(),
     seed = NULL,

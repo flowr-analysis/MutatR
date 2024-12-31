@@ -86,7 +86,7 @@ ops <- c(
   "&&", "|", "||", "!", "%in%", "<-", ":=", "<<-", "->", "->>", "=", ":", "?", "::", ":::", "%||%", "$"
 )
 
-cal <- function(cl, v, pd, srcfile, parent_srcref) {
+cal <- function(cl, v, pd, srcfile, parent_srcref) { # nolint: cyclocomp_linter.
   parts <- split_up_call(cl)
   f <- parts$name
   as <- parts$args
